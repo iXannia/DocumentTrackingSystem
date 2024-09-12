@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+    <h2 class="login">Document Tracking System</h2>
+
+    <form method="post" action="/login">
+        <!-- Optional logo section -->
+        <!--
+        <div class="imgcontainer">
+            <img src="img/depedlogo.png" alt="Logo" class="avatar">
+        </div>
+        -->
+
+        <div class="container">
+            <label for="email"><b>Email</b></label>
+            <input type="email" placeholder="Enter Email" name="email" aria-label="Email" required>
+
+            <label for="password"><b>Password</b></label>
+            <input type="password" placeholder="Enter Password" name="password" aria-label="Password" required>
+            
+            <label>
+                <input type="checkbox" checked="checked" name="remember"> Remember me
+            </label>
+            <span class="frgtpwd"><a href="/forgot-password">Forgot Password?</a></span>
+            
+            <button type="submit">Login</button>
+            <span class="rgstr">Don't have an account? <a href="/register">Register here</a></span>
+        </div>
+        
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+    </form>
+
+    <script>
+        // Prevent back navigation after logout
+        if (window.history && window.history.pushState) {
+            window.history.pushState(null, null, window.location.href);
+            window.onpopstate = function () {
+                window.history.pushState(null, null, window.location.href);
+                // Notify the server of the attempted back navigation
+                fetch('/track_navigation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: 'Back Navigation Attempt', url: window.location.href })
+                }).then(response => response.json()).then(data => {
+                    console.log('Navigation tracked:', data);
+                }).catch(error => {
+                    console.error('Error tracking navigation:', error);
+                });
+            };
+        }
+    </script>
+</body>
+</html>

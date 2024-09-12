@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Boxicons -->
+    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../static/dashboard.css">
+    <title>Admin Dashboard</title>
+    <!-- Link to a CSS framework like Bootstrap for styling (optional) -->
+    <!-- <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet"> -->
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <section id="sidebar">
+        <a href="{{ url_for('_admin_dashboard') }}" class="brand">
+            <i class='bx bxs-smile'></i>
+            <span class="text">DepEd Cebu City</span>
+        </a>
+        <ul class="side-menu top">
+            <li class="active">
+                <a href="{{ url_for('_admin_dashboard') }}">
+                    <i class='bx bxs-dashboard'></i>
+                    <span class="text">Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-message-dots'></i>
+                    <span class="text">Messages</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-group'></i>
+                    <span class="text">Team</span>
+                </a>
+            </li>
+        </ul>
+        <ul class="side-menu">
+            <li>
+                <a href="{{ url_for('logout') }}" class="logout">
+                    <i class='bx bxs-log-out-circle'></i>
+                    <span class="text">Logout</span>
+                </a>
+            </li>
+        </ul>
+    </section>
+    <!-- SIDEBAR -->
+
+    <div class="container mt-5">
+        <h1>Welcome to the Admin Dashboard</h1>
+        <h2 class="mt-4">List of Users</h2>
+        <table class="table table-striped mt-3">
+            <thead class="thead-dark">
+                <tr>
+                    <th>User ID</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.UserID }}</td>
+                    <td>{{ user.Firstname }}</td>
+                    <td>{{ user.Lastname }}</td>
+                    <td>{{ user.Email }}</td>
+                    <td>
+                        {% if user.Role == 1 %}
+                            Admin
+                        {% elif user.Role == 2 %}
+                            Teacher
+                        {% else %}
+                            User
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            let previousURL = window.location.href;
+        
+            // Track URL changes
+            function trackURLChange() {
+                const currentURL = window.location.href;
+                if (previousURL !== currentURL) {
+                    previousURL = currentURL;
+                    reportNavigationChange('URL Change', currentURL);
+                }
+            }
+        
+            // Detect back and forward navigation
+            window.onpopstate = function(event) {
+                reportNavigationChange('Back or Forward', window.location.href);
+            };
+        
+            // Report to the server
+            function reportNavigationChange(action, url) {
+                fetch('/track_navigation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: action, url: url })
+                }).then(response => response.json()).then(data => {
+                    console.log('Navigation tracked:', data);
+                }).catch(error => {
+                    console.error('Error tracking navigation:', error);
+                });
+            }
+        
+            // Track initial load
+            reportNavigationChange('Page Load', window.location.href);
+        
+            // Monitor URL changes
+            setInterval(trackURLChange, 500); // Check for URL changes every 500ms
+        });
+        </script>
+        
+</body>
+</html>

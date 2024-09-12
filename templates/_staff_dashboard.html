@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Boxicons -->
+    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../static/dashboard.css">
+    <title>STAFF Dashboard</title>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <section id="sidebar">
+        <a href="{{ url_for('_staff_dashboard') }}" class="brand">
+            <i class='bx bxs-smile'></i>
+            <span class="text">DepEd Cebu City</span>
+        </a>
+        <ul class="side-menu top">
+            <li class="active">
+                <a href="{{ url_for('_staff_dashboard') }}">
+                    <i class='bx bxs-dashboard'></i>
+                    <span class="text">Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('document_tracking') }}">
+                    <i class='bx bxs-doughnut-chart'></i>
+                    <span class="text">Track Document</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-message-dots'></i>
+                    <span class="text">Messages</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-group'></i>
+                    <span class="text">Team</span>
+                </a>
+            </li>
+        </ul>
+        <ul class="side-menu">
+            <li>
+                <a href="{{ url_for('logout') }}" class="logout">
+                    <i class='bx bxs-log-out-circle'></i>
+                    <span class="text">Logout</span>
+                </a>
+            </li>
+        </ul>
+    </section>
+    <!-- SIDEBAR -->
+
+    <!-- CONTENT -->
+    <section id="content">
+        <!-- NAVBAR -->
+        <nav>
+            <form action="#"></form>
+            <a href="#" class="profile">
+                <img src="img/people.png" alt="User Profile">
+            </a>
+        </nav>
+        <!-- NAVBAR -->
+
+        <!-- MAIN -->
+        <main>
+            <div class="head-title">
+                <div class="left">
+                    <h1>Hi! {{ user.Firstname }} {{ user.Middlename[0] if user.Middlename else '' }}. {{ user.Lastname }}</h1>
+                    <ul class="breadcrumb">
+                        <li>
+                            <a href="{{ url_for('_staff_dashboard') }}">Dashboard</a>
+                        </li>
+                        <li><i class='bx bx-chevron-right'></i></li>
+                        <li>
+                            <a class="active" href="{{ url_for('_staff_dashboard') }}">Home</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            
+
+            <!-- Form to Add New Document -->
+            <form method="POST" action="{{ url_for('add_document') }}">    
+                <div class="table-data">
+                    <div class="order">
+                        <div class="head">
+                            <h3>Add New Document</h3>
+                        </div>
+
+                        <div class="container">
+                            <label for="doctype">Document Type:</label>
+                            <select name="doctype" required aria-label="doctype">
+                                <!-- Dynamically generate the Document Type options from the backend -->
+                                {% for doctype in document_type %}
+                                    <option value="{{ doctype.DocTypeID }}">{{ doctype.DocTypeName }}</option>
+                                {% endfor %}
+                            </select>
+
+                            <label for="docdetails">Document Details:</label>
+                            <input type="text" name="docdetails" placeholder="Enter document details" required>
+
+                            <label for="docpurpose">Document Purpose:</label>
+                            <input type="text" name="docpurpose" placeholder="Enter document purpose" required>
+
+                            <label for="office">Receiving Office:</label>
+                            <select name="office" required aria-label="office">
+                                <!-- Dynamically generate the Office options from the backend -->
+                                {% for office in office %}
+                                    <option value="{{ office.OfficeID }}">{{ office.OfficeName }}</option>
+                                {% endfor %}
+                            </select>
+
+                            <button type="submit">Submit</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </main>
+        <!-- MAIN -->
+    </section>
+    <!-- CONTENT -->
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            let previousURL = window.location.href;
+        
+            // Track URL changes
+            function trackURLChange() {
+                const currentURL = window.location.href;
+                if (previousURL !== currentURL) {
+                    previousURL = currentURL;
+                    reportNavigationChange('URL Change', currentURL);
+                }
+            }
+        
+            // Detect back and forward navigation
+            window.onpopstate = function(event) {
+                reportNavigationChange('Back or Forward', window.location.href);
+            };
+        
+            // Report to the server
+            function reportNavigationChange(action, url) {
+                fetch('/track_navigation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: action, url: url })
+                }).then(response => response.json()).then(data => {
+                    console.log('Navigation tracked:', data);
+                }).catch(error => {
+                    console.error('Error tracking navigation:', error);
+                });
+            }
+        
+            // Track initial load
+            reportNavigationChange('Page Load', window.location.href);
+        
+            // Monitor URL changes
+            setInterval(trackURLChange, 500); // Check for URL changes every 500ms
+        });
+    </script>
+    
+</body>
+</html>
