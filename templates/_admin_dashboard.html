@@ -3,127 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Boxicons -->
-    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="../static/dashboard.css">
-    <title>Admin Dashboard</title>
-    <!-- Link to a CSS framework like Bootstrap for styling (optional) -->
-    <!-- <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet"> -->
+    <title>Register</title>
+    <link rel="stylesheet" href="../static/style.css">
+    <script>
+        function toggleSchoolInput(selectElement) {
+            const otherSchoolInput = document.getElementById('otherSchoolInput');
+            if (selectElement.value === 'others') {
+                otherSchoolInput.style.display = 'block';
+            } else {
+                otherSchoolInput.style.display = 'none';
+            }
+        }
+
+        function validatePhoneNumber(inputElement) {
+            const value = inputElement.value;
+            inputElement.value = value.replace(/\D/g, ''); // Remove non-numeric characters
+        }
+    </script>
 </head>
 <body>
-    <!-- SIDEBAR -->
-    <section id="sidebar">
-        <a href="{{ url_for('_admin_dashboard') }}" class="brand">
-            <i class='bx bxs-smile'></i>
-            <span class="text">DepEd Cebu City</span>
-        </a>
-        <ul class="side-menu top">
-            <li class="active">
-                <a href="{{ url_for('_admin_dashboard') }}">
-                    <i class='bx bxs-dashboard'></i>
-                    <span class="text">Home</span>
-                </a>
-            </li>
-            <li>
-                <a href="#">
-                    <i class='bx bxs-message-dots'></i>
-                    <span class="text">Messages</span>
-                </a>
-            </li>
-            <li>
-                <a href="#">
-                    <i class='bx bxs-group'></i>
-                    <span class="text">Team</span>
-                </a>
-            </li>
-        </ul>
-        <ul class="side-menu">
-            <li>
-                <a href="{{ url_for('logout') }}" class="logout">
-                    <i class='bx bxs-log-out-circle'></i>
-                    <span class="text">Logout</span>
-                </a>
-            </li>
-        </ul>
-    </section>
-    <!-- SIDEBAR -->
+    <div class="container">
+        <h1>Register</h1>
+        <form action="{{ url_for('register') }}" method="post">
+            <label for="firstname">Firstname:</label>
+            <input type="text" name="firstname" placeholder="First Name" aria-label="First Name" required>
 
-    <div class="container mt-5">
-        <h1>Welcome to the Admin Dashboard</h1>
-        <h2 class="mt-4">List of Users</h2>
-        <table class="table table-striped mt-3">
-            <thead class="thead-dark">
-                <tr>
-                    <th>User ID</th>
-                    <th>First Name</th>
-                    <th>Last Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in users %}
-                <tr>
-                    <td>{{ user.UserID }}</td>
-                    <td>{{ user.Firstname }}</td>
-                    <td>{{ user.Lastname }}</td>
-                    <td>{{ user.Email }}</td>
-                    <td>
-                        {% if user.Role == 1 %}
-                            Admin
-                        {% elif user.Role == 2 %}
-                            Teacher
-                        {% else %}
-                            User
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+            <label for="middlename">Middlename:</label>
+            <input type="text" name="middlename" placeholder="Middle Name" aria-label="Middle Name">
+
+            <label for="lastname">Lastname:</label>
+            <input type="text" name="lastname" placeholder="Last Name" aria-label="Last Name" required>
+
+            <label for="idnumber">Phone Number:</label>
+            <input type="text" name="idnumber" placeholder="Phone Number" aria-label="Phone Number" required minlength="11" maxlength="11" pattern="\d{11}" title="Phone number must be 11 digits" oninput="validatePhoneNumber(this)">
+
+            <label for="email">Email:</label>
+            <input type="email" name="email" placeholder="Email" aria-label="Email" required>
+
+            <label for="roles">Roles:</label>
+            <select name="roles" id="roles" required aria-label="Roles" onchange="toggleRoleForms(this)">
+                <option value="">Select Role</option>
+                <option value="admin">Admin</option>
+                <option value="staff">Staff</option>
+                <option value="user">User</option>
+            </select>
+
+            <!-- Admin Registration Form -->
+            <div id="adminRegistration" style="display: none;">
+                <h2>Admin Registration</h2>
+                <label for="password">Password:</label>
+                <input type="password" name="password" placeholder="Password" aria-label="Password" required>
+
+                <label for="confirm_password">Confirm Password:</label>
+                <input type="password" name="confirm_password" placeholder="Confirm Password" aria-label="Confirm Password" required>
+            </div>
+
+            <!-- Staff Registration Form -->
+            <div id="staffUserRegistration" style="display: none;">
+                <h2 id="formTitle">Staff Registration</h2>
+
+                <label for="office">Office:</label>
+                <select name="office" id="office" required aria-label="Office">
+                    <option value="">Select Office</option>
+                    {% for office in offices %}
+                        <option value="{{ office[0] }}">{{ office[1] }}</option>
+                    {% endfor %}
+                </select>
+
+                <label for="password">Password:</label>
+                <input type="password" name="password" placeholder="Password" aria-label="Password" required>
+
+                <label for="confirm_password">Confirm Password:</label>
+                <input type="password" name="confirm_password" placeholder="Confirm Password" aria-label="Confirm Password" required>
+            </div>
+
+            <!-- User Registration Form -->
+            <div id="userRegistration" style="display: none;">
+                <h2 id="formTitle">User Registration</h2>
+
+                <label for="school">School:</label>
+                <select name="school" id="school" required aria-label="School" onchange="toggleSchoolInput(this)">
+                    <option value="">Select School</option>
+                    {% for school in schools %}
+                        <option value="{{ school[0] }}">{{ school[1] }}</option>
+                    {% endfor %}
+                    <option value="others">Others</option>
+                </select>
+
+                <div id="otherSchoolInput" style="display: none;">
+                    <label for="other_school">Enter School Name:</label>
+                    <input type="text" name="other_school" placeholder="Other School Name" aria-label="Other School Name">
+                </div>
+
+                <label for="password">Password:</label>
+                <input type="password" name="password" placeholder="Password" aria-label="Password" required>
+
+                <label for="confirm_password">Confirm Password:</label>
+                <input type="password" name="confirm_password" placeholder="Confirm Password" aria-label="Confirm Password" required>
+            </div>
+
+            <button type="submit">Register</button>
+        </form>
+
+        <div class="login-link">
+            <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+        </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', (event) => {
-            let previousURL = window.location.href;
-        
-            // Track URL changes
-            function trackURLChange() {
-                const currentURL = window.location.href;
-                if (previousURL !== currentURL) {
-                    previousURL = currentURL;
-                    reportNavigationChange('URL Change', currentURL);
-                }
+        // Function to toggle between different role registration forms
+        function toggleRoleForms(selectElement) {
+            const adminForm = document.getElementById('adminRegistration');
+            const staffUserForm = document.getElementById('staffUserRegistration');
+            const userRegistrationForm = document.getElementById('userRegistration');
+            const formTitle = document.getElementById('formTitle');
+
+            if (selectElement.value === 'admin') {
+                adminForm.style.display = 'block';
+                staffUserForm.style.display = 'none';
+                userRegistrationForm.style.display = 'none';
+            } else if (selectElement.value === 'staff') {
+                adminForm.style.display = 'none';
+                staffUserForm.style.display = 'block';
+                userRegistrationForm.style.display = 'none';
+                formTitle.textContent = 'Staff Registration';
+            } else if (selectElement.value === 'user') {
+                adminForm.style.display = 'none';
+                staffUserForm.style.display = 'none';
+                userRegistrationForm.style.display = 'block';
+                formTitle.textContent = 'User Registration';
+            } else {
+                adminForm.style.display = 'none';
+                staffUserForm.style.display = 'none';
+                userRegistrationForm.style.display = 'none';
             }
-        
-            // Detect back and forward navigation
-            window.onpopstate = function(event) {
-                reportNavigationChange('Back or Forward', window.location.href);
-            };
-        
-            // Report to the server
-            function reportNavigationChange(action, url) {
-                fetch('/track_navigation', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ action: action, url: url })
-                }).then(response => response.json()).then(data => {
-                    console.log('Navigation tracked:', data);
-                }).catch(error => {
-                    console.error('Error tracking navigation:', error);
-                });
+        }
+
+        // Function to validate password and confirm password fields
+        document.querySelector('form').addEventListener('submit', function (e) {
+            const password = document.querySelector('input[name="password"]').value;
+            const confirmPassword = document.querySelector('input[name="confirm_password"]').value;
+
+            if (password !== confirmPassword) {
+                e.preventDefault();
+                alert('Passwords do not match. Please re-enter them.');
             }
-        
-            // Track initial load
-            reportNavigationChange('Page Load', window.location.href);
-        
-            // Monitor URL changes
-            setInterval(trackURLChange, 500); // Check for URL changes every 500ms
         });
-        </script>
-        
+    </script>
 </body>
 </html>

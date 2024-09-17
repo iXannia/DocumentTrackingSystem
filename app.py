@@ -58,57 +58,83 @@ def admin_required(f):
 # Endpoint for user registration
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Fetch all schools and offices for dropdown selection
+    cursor.execute('SELECT SchoolID, SchoolName FROM SCHOOLS')
+    schools = cursor.fetchall()  # Fetch all rows
+
+    cursor.execute('SELECT OfficeID, OfficeName FROM OFFICES')
+    offices = cursor.fetchall()  # Fetch all rows
+
     if request.method == 'POST':
-        firstname = request.form.get('firstname')
-        middlename = request.form.get('middlename')
-        lastname = request.form.get('lastname')
-        idnumber = request.form.get('idnumber')
-        email = request.form.get('email')
-        school_id = request.form.get('school')
-        password = request.form.get('password')
+        firstname = request.form['firstname']
+        middlename = request.form.get('middlename', None)
+        lastname = request.form['lastname']
+        idnumber = request.form['idnumber']
+        email = request.form['email']
+        password = request.form['password']
+        role = request.form.get('roles')
+
+        # Hash the password
         hashed_password = generate_password_hash(password)
 
-        conn = None
-        cursor = None
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
+        # Role-specific handling
+        if role == 'admin':
+            # Admin registration logic
+            try:
+                cursor.execute("""
+                    INSERT INTO USERS (Firstname, Middlename, Lastname, IDNumber, Email, Password, RoleID)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (firstname, middlename, lastname, idnumber, email, hashed_password, 1))  # Assuming RoleID=1 for Admin
+                conn.commit()
+                flash('Admin registered successfully!', 'success')
+                return redirect(url_for('login'))
+            except Exception as e:
+                conn.rollback()
+                flash(f'Error during admin registration: {e}', 'danger')
 
-            insert_query = """
-            INSERT INTO USERS (RoleID, SchoolID, Firstname, Middlename, Lastname, IDNumber, Email, Password)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """
-            cursor.execute(insert_query, (2, school_id, firstname, middlename, lastname, idnumber, email, hashed_password))
-            conn.commit()
+        elif role == 'staff':
+            office_id = request.form['office']
+            try:
+                cursor.execute("""
+                    INSERT INTO USERS (Firstname, Middlename, Lastname, IDNumber, Email, Password, RoleID, OfficeID)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, (firstname, middlename, lastname, idnumber, email, hashed_password, 3, office_id))  # Assuming RoleID=2 for Staff
+                conn.commit()
+                flash('Staff registered successfully!', 'success')
+                return redirect(url_for('login'))
+            except Exception as e:
+                conn.rollback()
+                flash(f'Error during staff registration: {e}', 'danger')
 
-            return redirect(url_for('login'))
+        elif role == 'user':
+            school_id = request.form['school']
+            if school_id == 'others':
+                other_school = request.form.get('other_school')
+                # Insert the new school into the SCHOOLS table and get the ID
+                cursor.execute("INSERT INTO SCHOOLS (SchoolName) VALUES (%s)", (other_school,))
+                conn.commit()
+                cursor.execute("SELECT LAST_INSERT_ID()")  # Get the inserted SchoolID
+                school_id = cursor.fetchone()[0]
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            try:
+                cursor.execute("""
+                    INSERT INTO USERS (Firstname, Middlename, Lastname, IDNumber, Email, Password, RoleID, SchoolID)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, (firstname, middlename, lastname, idnumber, email, hashed_password, 2, school_id))  # Assuming RoleID=3 for User
+                conn.commit()
+                flash('User registered successfully!', 'success')
+                return redirect(url_for('login'))
+            except Exception as e:
+                conn.rollback()
+                flash(f'Error during user registration: {e}', 'danger')
 
-        finally:
-            if cursor:
-                cursor.close()
-            if conn:
-                conn.close()
+    cursor.close()  # Close the cursor after usage
+    conn.close()  # Close the connection after usage
+    return render_template('register.html', schools=schools, offices=offices)
 
-    # Query the schools from the database
-    conn = None
-    cursor = None
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT SchoolID, SchoolName FROM SCHOOLS")
-        schools = cursor.fetchall()
-    except Exception as e:
-        schools = []
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-
-    return render_template('register.html', schools=schools)
 
 # Endpoint for user login
 @app.route('/login', methods=['GET', 'POST'])
@@ -275,6 +301,7 @@ def document_tracking():
         date_received = request.form.get('datereceived')
         status = 'Pending'
 
+        # Get user's school ID
         school_id = get_user_school_id(user_id)
 
         conn = None
@@ -282,16 +309,18 @@ def document_tracking():
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
+            
+            # Insert the new document into the DOCUMENTS table
             cursor.execute("""
                 INSERT INTO DOCUMENTS (UserID, DocTypeID, SchoolID, OfficeID, DocDetails, DocPurpose, DateEncoded, DateReceived, Status)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (user_id, doc_type_id, school_id, office_id, doc_details, doc_purpose, date_encoded, date_received, status))
             conn.commit()
 
-            # Generate TrackingNumber here
+            # Generate a tracking number
             tracking_number = generate_tracking_number()
-            
-            # Update document with TrackingNumber
+
+            # Update the document with the generated tracking number
             cursor.execute("""
                 UPDATE DOCUMENTS 
                 SET TrackingNumber = %s 
@@ -299,7 +328,7 @@ def document_tracking():
             """, (tracking_number, user_id))
             conn.commit()
 
-            return redirect(url_for('document_tracking'))  # Redirect to the same page to show the new data
+            return redirect(url_for('document_tracking'))
 
         except Exception as e:
             return jsonify({"error": str(e)}), 500
@@ -309,8 +338,8 @@ def document_tracking():
                 cursor.close()
             if conn:
                 conn.close()
-    
-    # Fetch documents for display
+
+    # For GET method: Fetch user's documents for display
     user_id = session.get('user_id')
     conn = None
     cursor = None
@@ -343,7 +372,6 @@ def document_tracking():
 
     return render_template('document_tracking.html', documents=documents)
 
-
 def get_user_school_id(user_id):
     conn = None
     cursor = None
@@ -360,22 +388,40 @@ def get_user_school_id(user_id):
             conn.close()
 
 def generate_tracking_number():
-    characters = string.ascii_letters + string.digits
-    tracking_number = ''.join(random.choice(characters) for _ in range(8))  # 8-character random string
+    # Define the fixed prefix
+    prefix = 'TRCK-'
+    
+    # Define the length of each segment
+    segment_lengths = [4, 4, 4]  # Three segments of lengths 4 each
+    
+    # Function to generate a random alphanumeric string of given length
+    def random_segment(length):
+        return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+    
+    # Generate each segment
+    segments = [random_segment(length) for length in segment_lengths]
+    
+    # Combine the segments with dashes
+    tracking_number = prefix + '-'.join(segments)
+    
     return tracking_number
+
 
 @app.route('/add_document', methods=['POST'])
 @login_required
 def add_document():
     user_id = session.get('user_id')
     doc_type_id = request.form['doctype']
-    office_id = request.form['office']
     doc_details = request.form['docdetails']
     doc_purpose = request.form['docpurpose']
     date_encoded = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     date_received = request.form.get('datereceived')
     status = 'Pending'
 
+    # Hardcoded OfficeID for the Records Office
+    office_id = 7  # Replace with the actual OfficeID for the Records Office
+
+    # Fetch the SchoolID associated with the user
     school_id = get_user_school_id(user_id)
 
     conn = None
@@ -384,21 +430,21 @@ def add_document():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Get the next DocNo
+        # Get the next available DocNo
         cursor.execute("SELECT COALESCE(MAX(DocNo), 0) + 1 FROM DOCUMENTS")
         next_doc_no = cursor.fetchone()[0]
 
-        # Insert new document
+        # Insert the new document details
         cursor.execute("""
             INSERT INTO DOCUMENTS (DocNo, UserID, DocTypeID, SchoolID, OfficeID, DocDetails, DocPurpose, DateEncoded, DateReceived, Status)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (next_doc_no, user_id, doc_type_id, school_id, office_id, doc_details, doc_purpose, date_encoded, date_received, status))
         conn.commit()
 
-        # Generate TrackingNumber here
+        # Generate a tracking number for the new document
         tracking_number = generate_tracking_number()
 
-        # Update document with TrackingNumber
+        # Update the document with the generated tracking number
         cursor.execute("""
             UPDATE DOCUMENTS 
             SET TrackingNumber = %s 
@@ -406,16 +452,22 @@ def add_document():
         """, (tracking_number, next_doc_no))
         conn.commit()
 
+        # Redirect back to the user dashboard after adding the document
         return redirect(url_for('_users_dashboard'))
 
     except Exception as e:
+        # Return error response in case of exception
         return jsonify({"error": str(e)}), 500
 
     finally:
+        # Ensure the database connection is properly closed
         if cursor:
             cursor.close()
         if conn:
             conn.close()
+
+
+
 
 @app.route('/logout')
 @login_required
@@ -428,6 +480,20 @@ def logout():
     # Redirect to the login page
     return redirect(url_for('login'))
 
+@app.route('/edit_document/<int:doc_no>', methods=['GET', 'POST'])
+def edit_document(doc_no):
+    # Your code to handle the document editing
+    pass
+
+@app.route('/delete_document/<int:doc_no>', methods=['POST'])
+def delete_document(doc_no):
+    # Your code to handle the document deletion
+    pass
+
+@app.route('/view_document/<int:doc_no>', methods=['GET'])
+def view_document(doc_no):
+    # Your code to handle viewing the document
+    pass
 
 
 

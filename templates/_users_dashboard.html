@@ -104,19 +104,21 @@
                             <label for="docpurpose">Document Purpose:</label>
                             <input type="text" name="docpurpose" placeholder="Enter document purpose" required>
 
-                            <label for="office">Receiving Office:</label>
-                            <select name="office" required aria-label="office">
-                                <!-- Dynamically generate the Office options from the backend -->
-                                {% for office in office %}
-                                    <option value="{{ office.OfficeID }}">{{ office.OfficeName }}</option>
-                                {% endfor %}
-                            </select>
-
                             <button type="submit">Submit</button>
                         </div>
                     </div>
                 </div>
             </form>
+
+            <!-- Confirmation Modal -->
+            <div id="confirmationModal" class="modal">
+                <div class="modal-content">
+                    <span class="close" onclick="closeConfirmationModal()">&times;</span>
+                    <div class="confirmation-icon">&#10004;</div> <!-- Check mark -->
+                    <div class="confirmation-message">This transaction has been submitted successfully!</div>
+                </div>
+            </div>
+
         </main>
         <!-- MAIN -->
     </section>
@@ -162,6 +164,11 @@
             // Monitor URL changes
             setInterval(trackURLChange, 500); // Check for URL changes every 500ms
         });
+
+        // Function to close the confirmation modal
+        function closeConfirmationModal() {
+            document.getElementById('confirmationModal').style.display = 'none';
+        }
     </script>
     
 </body>

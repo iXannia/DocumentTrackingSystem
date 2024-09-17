@@ -78,7 +78,7 @@ input[type=text], input[type=email], input[type=password], select {
     border: 2px solid #ccc;
     box-sizing: border-box;
 }
-
+    
 
 button {
     background-color: #04AA6D;
