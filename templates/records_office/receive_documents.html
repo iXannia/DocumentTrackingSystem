@@ -5,66 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Boxicons -->
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
-    <!-- My CSS -->
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="../static/dashboard.css">
-    <title>AdminHub</title>
-    <style>
-        /* Additional CSS for action buttons */
-        .action-buttons {
-            display: flex;
-            gap: 5px;
-        }
-        .action-buttons a {
-            text-decoration: none;
-            padding: 5px 10px;
-            border-radius: 5px;
-            color: #fff;
-            font-size: 12px;
-        }
-        .action-buttons .edit {
-            background-color: #007bff; /* Blue */
-        }
-        .action-buttons .delete {
-            background-color: #dc3545; /* Red */
-        }
-        .action-buttons .view {
-            background-color: #28a745; /* Green */
-        }
-        .action-buttons a:hover {
-            opacity: 0.8;
-        }
-    </style>
+    <title>Staff Dashboard</title>
 </head>
 <body>
     <!-- SIDEBAR -->
     <section id="sidebar">
-        <a href="_users_dashboard" class="brand" aria-label="Home">
+        <a href="_records_dashboard" class="brand" aria-label="Home">
             <i class='bx bxs-smile'></i>
             <span class="text">DepEd Cebu City</span>
         </a>
         <ul class="side-menu top">
             <li>
-                <a href="_users_dashboard" aria-label="Dashboard Home">
+                <a href="_records_dashboard" aria-label="Dashboard Home">
                     <i class='bx bxs-dashboard'></i>
-                    <span class="text">Home</span>
+                    <span class="text">Dashboard</span>
                 </a>
             </li>
             <li class="active">
-                <a href="document_tracking" aria-label="Track Document">
-                    <i class='bx bxs-doughnut-chart'></i>
-                    <span class="text">Track Document</span>
+                <a href="receive_documents" aria-label="Track Document">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Received Documents</span>
                 </a>
             </li>
             <li>
-                <a href="#" aria-label="Messages">
-                    <i class='bx bxs-message-dots'></i>
-                    <span class="text">Messages</span>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Forwarded Documents</span>
                 </a>
             </li>
             <li>
-                <a href="#" aria-label="Team">
-                    <i class='bx bxs-group'></i>
-                    <span class="text">Team</span>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Pending Documents</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Return Documents</span>
                 </a>
             </li>
         </ul>
@@ -84,7 +64,7 @@
         <!-- NAVBAR -->
         <nav>
             <form action="#"></form>
-            <a href="#" class="profile" aria-label="User Profile">
+            <a href="#" class="profile">
                 <img src="img/people.png" alt="User Profile Image">
             </a>
         </nav>
@@ -94,14 +74,14 @@
         <main>
             <div class="head-title">
                 <div class="left">
-                    <h1>Track Document</h1>
+                    <h1>All Documents</h1>
                     <ul class="breadcrumb">
                         <li>
-                            <a href="#">Dashboard</a>
+                            <a class="active" href="{{ url_for('_records_dashboard') }}">Dashboard</a>
                         </li>
                         <li><i class='bx bx-chevron-right'></i></li>
                         <li>
-                            <a class="active" href="#">Track Document</a>
+                            <a class="active" href="{{ url_for('_records_dashboard') }}">Received Documents</a>
                         </li>
                     </ul>
                 </div>
@@ -111,8 +91,6 @@
                 <div class="order">
                     <div class="head">
                         <h3>Documents</h3>
-                        <i class='bx bx-search' aria-label="Search"></i>
-                        <i class='bx bx-filter' aria-label="Filter"></i>
                     </div>
                     <table>
                         <thead>
@@ -126,7 +104,6 @@
                                 <th>Date Encoded</th>
                                 <th>Date Received</th>
                                 <th>Status</th>
-                                <th>Action</th> <!-- New column for action buttons -->
                             </tr>
                         </thead>
                         <tbody>
@@ -138,28 +115,55 @@
                                     <td>{{ document.DocTypeName }}</td>
                                     <td>{{ document.DocDetails }}</td>
                                     <td>{{ document.DocPurpose }}</td>
-                                    <td>{{ document.SchoolName }}</td>
+                                    <td>
+                                        {% if document.SchoolName %}
+                                            {{ document.SchoolName }}
+                                        {% elif document.OfficeName %}
+                                            {{ document.OfficeName }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
                                     <td>{{ document.DateEncoded }}</td>
                                     <td>{{ document.DateReceived }}</td>
                                     <td><span class="status {{ document.Status|lower }}">{{ document.Status }}</span></td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <a href="{{ url_for('edit_document', doc_no=document.DocNo) }}" class="edit">Edit</a>
-                                            <a href="{{ url_for('delete_document', doc_no=document.DocNo) }}" class="delete">Delete</a>
-                                            <a href="{{ url_for('view_document', doc_no=document.DocNo) }}" class="view">View</a>
-                                        </div>
-                                    </td>
                                 </tr>
                                 {% endfor %}
                             {% else %}
                                 <tr>
-                                    <td colspan="10">No documents found.</td>
+                                    <td colspan="9">No documents found.</td>
                                 </tr>
                             {% endif %}
-                        </tbody>
+                        </tbody>                        
                     </table>
                 </div>
             </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                {% if total_pages > 1 %}
+                    <ul>
+                        <!-- Previous button -->
+                        <li class="{% if current_page == 1 %}disabled{% endif %}">
+                            <a href="?page={{ current_page - 1 }}">Prev</a>
+                        </li>
+
+                        <!-- Page numbers -->
+                        {% for p in range(1, total_pages + 1) %}
+                            <li class="{% if current_page == p %}active{% endif %}">
+                                <a href="?page={{ p }}">{{ p }}</a>
+                            </li>
+                        {% endfor %}
+
+                        <!-- Next button -->
+                        <li class="{% if current_page == total_pages %}disabled{% endif %}">
+                            <a href="?page={{ current_page + 1 }}">Next</a>
+                        </li>
+                    </ul>
+                {% endif %}
+            </div>
+            <!-- Pagination End -->
+
         </main>
         <!-- MAIN -->
     </section>

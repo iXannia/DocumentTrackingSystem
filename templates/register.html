@@ -5,64 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register</title>
     <link rel="stylesheet" href="../static/style.css">
-    <script>
-        // Function to toggle the visibility of the input field for other schools
-        function toggleSchoolInput(selectElement) {
-            const otherSchoolInput = document.getElementById('otherSchoolInput');
-            if (selectElement.value === 'others') {
-                otherSchoolInput.style.display = 'block'; // Show input field for other school
-            } else {
-                otherSchoolInput.style.display = 'none'; // Hide input field for other school
-            }
-        }
-
-        // Function to remove non-numeric characters from phone number
-        function validatePhoneNumber(inputElement) {
-            const value = inputElement.value;
-            inputElement.value = value.replace(/\D/g, ''); // Remove non-numeric characters
-        }
-
-        // Function to toggle between different role registration forms
-        function toggleRoleForms(selectElement) {
-            const adminForm = document.getElementById('adminRegistration');
-            const staffUserForm = document.getElementById('staffUserRegistration');
-            const userRegistrationForm = document.getElementById('userRegistration');
-            const formTitle = document.getElementById('formTitle');
-
-            if (selectElement.value === 'admin') {
-                adminForm.style.display = 'block';  // Show Admin form
-                staffUserForm.style.display = 'none'; // Hide Staff/User form
-                userRegistrationForm.style.display = 'none'; // Hide User form
-            } else if (selectElement.value === 'staff') {
-                adminForm.style.display = 'none';  // Hide Admin form
-                staffUserForm.style.display = 'block';  // Show Staff form
-                userRegistrationForm.style.display = 'none'; // Hide User form
-                formTitle.textContent = 'Staff Registration';
-            } else if (selectElement.value === 'user') {
-                adminForm.style.display = 'none';  // Hide Admin form
-                staffUserForm.style.display = 'none'; // Hide Staff form
-                userRegistrationForm.style.display = 'block';  // Show User form
-                formTitle.textContent = 'User Registration'; // Update title for User
-            } else {
-                adminForm.style.display = 'none';  // Hide Admin form
-                staffUserForm.style.display = 'none'; // Hide Staff form
-                userRegistrationForm.style.display = 'none'; // Hide User form
-            }
-        }
-
-        // Function to validate password and confirm password fields
-        document.addEventListener('DOMContentLoaded', function () {
-            document.querySelector('form').addEventListener('submit', function (e) {
-                const password = document.querySelector('input[name="password"]').value;
-                const confirmPassword = document.querySelector('input[name="confirm_password"]').value;
-
-                if (password !== confirmPassword) {
-                    e.preventDefault(); // Prevent form submission
-                    alert('Passwords do not match. Please re-enter them.');
-                }
-            });
-        });
-    </script>
 </head>
 <body>
     <div class="container">
@@ -78,79 +20,46 @@
             <input type="text" name="lastname" placeholder="Last Name" aria-label="Last Name" required>
 
             <label for="idnumber">Phone Number:</label>
-            <input type="text" name="idnumber" placeholder="Phone Number" aria-label="Phone Number" required minlength="11" maxlength="11" pattern="\d{11}" title="Phone number must be 11 digits" oninput="validatePhoneNumber(this)">
+            <input type="text" name="idnumber" placeholder="Phone Number" aria-label="ID Number" required minlength="11" maxlength="11" pattern="\d{11}" title="Phone number must be 11 digits">
 
             <label for="email">Email:</label>
             <input type="email" name="email" placeholder="Email" aria-label="Email" required>
 
-            <label for="roles">Roles:</label>
-            <select name="roles" id="roles" required aria-label="Roles" onchange="toggleRoleForms(this)">
-                <option value="">Select Role</option>
-                <option value="admin">Admin</option>
-                <option value="staff">Staff</option>
-                <option value="user">User</option>
+            <label for="school">School/Office:</label>
+            <select name="school" id="school" required aria-label="School" onchange="toggleSchoolInput(this)">
+                <!-- Dynamically generate the school options from the backend -->
+                {% for school in schools %}
+                    <option value="{{ school[0] }}">{{ school[1] }}</option>
+                {% endfor %}
+                <option value="others">Others</option>
             </select>
 
-            <!-- Admin Registration Form -->
-            <div id="adminRegistration" style="display: none;">
-                <h2>Admin Registration</h2>
-                <label for="password">Password:</label>
-                <input type="password" name="password" placeholder="Password" aria-label="Password" required>
-
-                <label for="confirm_password">Confirm Password:</label>
-                <input type="password" name="confirm_password" placeholder="Confirm Password" aria-label="Confirm Password" required>
+            <!-- Hidden input for entering the school name if "Others" is selected -->
+            <div id="otherSchoolContainer" style="display:none;">
+                <label for="otherSchool">Other School/Office:</label>
+                <input type="text" name="other_school" id="otherSchool" placeholder="Enter Your Complete School/Office name">
             </div>
 
-            <!-- Staff Registration Form -->
-            <div id="staffUserRegistration" style="display: none;">
-                <h2 id="formTitle">Staff Registration</h2>
-
-                <label for="office">Office:</label>
-                <select name="office" id="office" required aria-label="Office">
-                    <option value="">Select Office</option>
-                    {% for office in offices %}
-                        <option value="{{ office[0] }}">{{ office[1] }}</option>
-                    {% endfor %}
-                </select>
-
-                <label for="password">Password:</label>
-                <input type="password" name="password" placeholder="Password" aria-label="Password" required>
-
-                <label for="confirm_password">Confirm Password:</label>
-                <input type="password" name="confirm_password" placeholder="Confirm Password" aria-label="Confirm Password" required>
-            </div>
-
-            <!-- User Registration Form -->
-            <div id="userRegistration" style="display: none;">
-                <h2 id="formTitle">User Registration</h2>
-
-                <label for="school">School:</label>
-                <select name="school" id="school" required aria-label="School" onchange="toggleSchoolInput(this)">
-                    <option value="">Select School</option>
-                    {% for school in schools %}
-                        <option value="{{ school[0] }}">{{ school[1] }}</option>
-                    {% endfor %}
-                    <option value="others">Others</option>
-                </select>
-
-                <div id="otherSchoolInput" style="display: none;">
-                    <label for="other_school">Enter School Name:</label>
-                    <input type="text" name="other_school" placeholder="Other School Name" aria-label="Other School Name">
-                </div>
-
-                <label for="password">Password:</label>
-                <input type="password" name="password" placeholder="Password" aria-label="Password" required>
-
-                <label for="confirm_password">Confirm Password:</label>
-                <input type="password" name="confirm_password" placeholder="Confirm Password" aria-label="Confirm Password" required>
-            </div>
+            <label for="password">Password:</label>
+            <input type="password" name="password" placeholder="Password" aria-label="Password" required>
 
             <button type="submit">Register</button>
         </form>
-
         <div class="login-link">
             <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
         </div>
     </div>
+
+    <script>
+        // Function to toggle the display of the "Other School" input field
+        function toggleSchoolInput(selectElement) {
+            const otherSchoolContainer = document.getElementById('otherSchoolContainer');
+            if (selectElement.value === 'others') {
+                otherSchoolContainer.style.display = 'block'; // Show the input field
+            } else {
+                otherSchoolContainer.style.display = 'none'; // Hide the input field
+            }
+        }
+    </script>
 </body>
 </html>
