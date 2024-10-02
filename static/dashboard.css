@@ -160,10 +160,6 @@ body {
 }
 /* SIDEBAR */
 
-
-
-
-
 /* CONTENT */
 #content {
 	position: relative;
@@ -175,9 +171,6 @@ body {
 	width: calc(100% - 60px);
 	left: 60px;
 }
-
-
-
 
 /* NAVBAR */
 #content nav {
@@ -676,3 +669,33 @@ button:hover {
     pointer-events: none;
 }
 
+/* Modal Styles */
+.modal {
+	display: none;
+	position: absolute;
+	z-index: 1;
+	left: 24.2%;
+	top: 0;
+	width: 50%;
+	height: 100%;
+	/* background-color: rgba(0, 0, 0, 0.5); */
+	justify-content: center;
+	align-items: center;
+}
+
+.modal-content {
+	background-color: rgb(240, 240, 240);
+	padding: 50px;
+	border-radius: 10px;
+	text-align: center;
+	font-weight: bold;
+}
+
+#closeModalBtn {
+	background-color: #4CAF50;
+	color: white;
+	padding: 10px 20px;
+	border: none;
+	border-radius: 5px;
+	cursor: pointer;
+}

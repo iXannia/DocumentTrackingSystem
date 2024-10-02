@@ -215,18 +215,15 @@ def login():
                 session['username'] = user['Firstname']
                 session['role'] = int(user['RoleID'])
 
-                # Redirect based on RoleID
-                if user['RoleID'] == 1:  # ADMIN
-                    return redirect(url_for('_admin_dashboard'))
-                elif user['RoleID'] == 2:  # USERS
-                    return redirect(url_for('_users_dashboard'))
-                elif user['RoleID'] == 3:  # STAFF
-                    # Check if the user is a staff member and fetch their OfficeID
+                # Check if the user is a staff member and fetch their OfficeID
+                if user['RoleID'] == 3:  # STAFF
                     cursor.execute("SELECT OfficeID FROM STAFFS WHERE UserID = %s", (user['UserID'],))
                     staff = cursor.fetchone()
 
                     if staff:  # User is a staff member
                         office_id = staff['OfficeID']
+                        session['office_id'] = office_id  # Store OfficeID in the session
+
                         # Redirect based on OfficeID
                         if office_id == 9:  # BUDGET OFFICE
                             return redirect(url_for('_budget_dashboard'))
@@ -247,6 +244,12 @@ def login():
                     else:
                         return redirect(url_for('_records_dashboard'))  # Default redirect if no office found for staff
 
+                # Redirect based on RoleID for admin and users
+                if user['RoleID'] == 1:  # ADMIN
+                    return redirect(url_for('_admin_dashboard'))
+                elif user['RoleID'] == 2:  # USERS
+                    return redirect(url_for('_users_dashboard'))
+
             else:
                 return "Invalid email or password", 401  # Invalid login credentials
 
@@ -261,8 +264,6 @@ def login():
                 conn.close()
 
     return render_template('login.html')  # Render login page for GET requests
-
-
 
 # (USERS DASHBOARD) Users route to display after login 
 @app.route('/_users_dashboard')
@@ -324,7 +325,8 @@ def _admin_dashboard():
         if conn:
             conn.close()
 
-# STAFF = RECORDS DASHBOARD
+#OFFICES DASHBOARDS
+# RECORDS OFFICE DASHBOARD
 @app.route('/_records_dashboard', methods=['GET'])
 def _records_dashboard():
     return office_dashboard(session['user_id'], 'records_office/_records_dashboard.html')
@@ -517,6 +519,7 @@ def get_user_school_id(user_id):
         if conn:
             conn.close()
 
+#GENERATE RANDOM TRACKING NUMBER
 def generate_tracking_number():
     # Define the fixed prefix
     prefix = 'TRCK-'
@@ -596,7 +599,7 @@ def add_document():
         if conn:
             conn.close()
 
-# ADD DOCUMENTS FOR STAFF
+# ADD DOCUMENTS FOR ALL OFFICES
 @app.route('/staff_add_document', methods=['POST'])
 @login_required
 def staff_add_document():
@@ -612,8 +615,10 @@ def staff_add_document():
     date_received = request.form.get('datereceived')
     status = 'Pending'
 
-    # Hardcoded OfficeID for the Records Office or dynamic based on staff role/office
-    office_id = 14  # Replace with dynamic OfficeID if needed
+    # Get the office ID from the session (staff office submitting the document)
+    office_id = session.get('office_id')  # Ensure this is set correctly when the user logs in
+    if not office_id:
+        return jsonify({"error": "Office ID not found in session."}), 400  # Handle case where office_id is not found
 
     # Fetch the SchoolID associated with the user (staff)
     school_id = get_user_school_id(user_id)
@@ -628,7 +633,7 @@ def staff_add_document():
         cursor.execute("SELECT COALESCE(MAX(DocNo), 0) + 1 FROM DOCUMENTS")
         next_doc_no = cursor.fetchone()[0]
 
-        # Insert the new document details
+        # Insert the new document details, with the correct OfficeID and SchoolID
         cursor.execute("""
             INSERT INTO DOCUMENTS (DocNo, UserID, DocTypeID, SchoolID, OfficeID, DocDetails, DocPurpose, DateEncoded, DateReceived, Status)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -646,8 +651,8 @@ def staff_add_document():
         """, (tracking_number, next_doc_no))
         conn.commit()
 
-        # Redirect back to the staff dashboard after adding the document
-        return redirect(url_for('_records_dashboard'))
+        # Return success response
+        return jsonify({"success": True})
 
     except Exception as e:
         # Return error response in case of exception
@@ -660,8 +665,7 @@ def staff_add_document():
         if conn:
             conn.close()
 
-
-# DISPLAY DOCUMENTS FOR RECORDS
+# DISPLAY ALL DOCUMENTS FOR RECORDS
 @app.route('/receive_documents')
 @login_required
 def receive_documents():
@@ -673,9 +677,10 @@ def receive_documents():
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # Fetch paginated documents along with user, school, and office details
+        # Fetch paginated documents along with user, school, and office details, including DocNo
         cursor.execute("""
-            SELECT d.TrackingNumber, 
+            SELECT d.DocNo,  -- Include the DocNo here
+                   d.TrackingNumber, 
                    u.Firstname, 
                    u.Lastname, 
                    dt.DocTypeName, 
@@ -713,6 +718,278 @@ def receive_documents():
     finally:
         cursor.close()
         conn.close()
+
+# TRACK ALL DOCUMENTS IN BUDGET OFFICE
+@app.route('/track_budget_documents')
+@login_required
+def track_budget_documents():
+    page = request.args.get('page', 1, type=int)  # Get the page number from query params
+    per_page = 10  # Documents per page
+    offset = (page - 1) * per_page
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # Fetch paginated documents for the Budget Office along with user, school, and office details
+        cursor.execute(""" 
+            SELECT d.TrackingNumber, 
+                   u.Firstname, 
+                   u.Lastname, 
+                   dt.DocTypeName, 
+                   d.DocDetails, 
+                   d.DocPurpose, 
+                   COALESCE(s.SchoolName, o.OfficeName, 'N/A') AS SchoolOrOffice, 
+                   d.DateEncoded, 
+                   d.DateReceived, 
+                   d.Status
+            FROM DOCUMENTS d
+            JOIN USERS u ON d.UserID = u.UserID
+            JOIN DOCUMENT_TYPE dt ON d.DocTypeID = dt.DocTypeID
+            LEFT JOIN SCHOOLS s ON d.SchoolID = s.SchoolID
+            LEFT JOIN OFFICES o ON d.OfficeID = o.OfficeID
+            WHERE d.OfficeID = %s  -- Filter by the Budget Office
+            ORDER BY d.DateEncoded DESC
+            LIMIT %s OFFSET %s
+        """, (9, per_page, offset))  # Assuming 9 is the OfficeID for the Budget Office
+
+        documents = cursor.fetchall()
+
+        # Count total documents for the Budget Office
+        cursor.execute("SELECT COUNT(*) FROM DOCUMENTS WHERE OfficeID = %s", (9,))
+        total_documents = cursor.fetchone()['COUNT(*)']
+        total_pages = (total_documents + per_page - 1) // per_page
+
+        return render_template(
+            'budget_office/track_budget_documents.html',
+            documents=documents,
+            current_page=page,
+            total_pages=total_pages  # Ensure total_pages is defined here
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+# TRACK ALL DOCUMENTS IN CASHIER OFFICE
+@app.route('/track_cashier_documents')
+@login_required
+def track_cashier_documents():
+    page = request.args.get('page', 1, type=int)  # Get the page number from query params
+    per_page = 10  # Documents per page
+    offset = (page - 1) * per_page
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # Fetch paginated documents for the Cashier Office along with user, school, and office details
+        cursor.execute(""" 
+            SELECT d.TrackingNumber, 
+                   u.Firstname, 
+                   u.Lastname, 
+                   dt.DocTypeName, 
+                   d.DocDetails, 
+                   d.DocPurpose, 
+                   COALESCE(s.SchoolName, o.OfficeName, 'N/A') AS SchoolOrOffice, 
+                   d.DateEncoded, 
+                   d.DateReceived, 
+                   d.Status
+            FROM DOCUMENTS d
+            JOIN USERS u ON d.UserID = u.UserID
+            JOIN DOCUMENT_TYPE dt ON d.DocTypeID = dt.DocTypeID
+            LEFT JOIN SCHOOLS s ON d.SchoolID = s.SchoolID
+            LEFT JOIN OFFICES o ON d.OfficeID = o.OfficeID
+            WHERE d.OfficeID = %s  -- Filter by the Cashier Office
+            ORDER BY d.DateEncoded DESC
+            LIMIT %s OFFSET %s
+        """, (10, per_page, offset))  # Assuming 10 is the OfficeID for the Cashier Office
+
+        documents = cursor.fetchall()
+
+        # Count total documents for the Cashier Office
+        cursor.execute("SELECT COUNT(*) FROM DOCUMENTS WHERE OfficeID = %s", (10,))
+        total_documents = cursor.fetchone()['COUNT(*)']
+        total_pages = (total_documents + per_page - 1) // per_page
+
+        return render_template(
+            'cashier_office/track_cashier_documents.html',
+            documents=documents,
+            current_page=page,
+            total_pages=total_pages  # Ensure total_pages is defined here
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+# TRACK ALL DOCUMENTS IN CASHIER OFFICE
+@app.route('/track_hrmu_documents')
+@login_required
+def track_hrmu_documents():
+    page = request.args.get('page', 1, type=int)  # Get the page number from query params
+    per_page = 10  # Documents per page
+    offset = (page - 1) * per_page
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # Fetch paginated documents for the HRMU Office along with user, school, and office details
+        cursor.execute(""" 
+            SELECT d.TrackingNumber, 
+                   u.Firstname, 
+                   u.Lastname, 
+                   dt.DocTypeName, 
+                   d.DocDetails, 
+                   d.DocPurpose, 
+                   COALESCE(s.SchoolName, o.OfficeName, 'N/A') AS SchoolOrOffice, 
+                   d.DateEncoded, 
+                   d.DateReceived, 
+                   d.Status
+            FROM DOCUMENTS d
+            JOIN USERS u ON d.UserID = u.UserID
+            JOIN DOCUMENT_TYPE dt ON d.DocTypeID = dt.DocTypeID
+            LEFT JOIN SCHOOLS s ON d.SchoolID = s.SchoolID
+            LEFT JOIN OFFICES o ON d.OfficeID = o.OfficeID
+            WHERE d.OfficeID = %s  -- Filter by the HRMU Office
+            ORDER BY d.DateEncoded DESC
+            LIMIT %s OFFSET %s
+        """, (11, per_page, offset))  # Assuming 11 is the OfficeID for HRMU Office
+
+        documents = cursor.fetchall()
+
+        # Count total documents for the HRMU Office
+        cursor.execute("SELECT COUNT(*) FROM DOCUMENTS WHERE OfficeID = %s", (11,))
+        total_documents = cursor.fetchone()['COUNT(*)']
+        total_pages = (total_documents + per_page - 1) // per_page
+
+        return render_template(
+            'hrmu_office/track_hrmu_documents.html',
+            documents=documents,
+            current_page=page,
+            total_pages=total_pages  # Ensure total_pages is defined here
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route('/forward_document/<int:doc_id>', methods=['POST'])
+def forward_document(doc_id):
+    # Logic for forwarding the document
+    # You can access the doc_id here and perform the forwarding action.
+    return redirect(url_for('receive_documents'))
+
+#RECEIVED DOCUMENTS FOR BUDGET
+@app.route('/budget_documents', methods=['GET'])
+def budget_documents():
+    conn = None
+    cursor = None
+    try:
+        # Establish database connection
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Fetch documents specific to the Budget Office
+        cursor.execute("""
+            SELECT d.TrackingNumber, u.Firstname, u.Lastname, dt.DocTypeName, 
+                   d.DocDetails, d.DocPurpose, s.SchoolName, d.DateEncoded, 
+                   d.DateReceived, d.Status, o.OfficeName
+            FROM DOCUMENTS d
+            JOIN USERS u ON d.UserID = u.UserID
+            JOIN DOCUMENT_TYPE dt ON d.DocTypeID = dt.DocTypeID
+            LEFT JOIN SCHOOLS s ON d.SchoolID = s.SchoolID
+            LEFT JOIN OFFICES o ON d.SchoolID = o.OfficeID  -- Adjust this if needed
+            WHERE d.Status = 'Received' AND o.OfficeID = 9  -- Assuming OfficeID 9 is for BUDGET OFFICE
+            ORDER BY d.DateEncoded DESC
+        """)
+
+        documents = cursor.fetchall()
+
+        # Pagination logic (if needed)
+        current_page = int(request.args.get('page', 1))
+        per_page = 10
+        total_documents = len(documents)
+        total_pages = (total_documents + per_page - 1) // per_page
+        documents = documents[(current_page - 1) * per_page:current_page * per_page]
+
+        return render_template('budget_office/budget_documents.html', documents=documents, 
+                               total_pages=total_pages, current_page=current_page)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  # Handle exceptions
+
+    finally:
+        # Close the cursor and connection
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+#DISPLAY RECEIVED DOCUMENTS FOR CASHIER
+@app.route('/cashier_documents', methods=['GET'])
+def cashier_documents():
+    try:
+        # OfficeID for Cashier Office is assumed to be 10
+        cashier_office_id = 10
+
+        # Fetch the documents received by the Cashier Office from the database
+        # Ensure you modify the query to match your database schema
+        query = """
+            SELECT d.TrackingNumber, u.Firstname, u.Lastname, dt.DocTypeName, d.DocDetails, 
+                   d.DocPurpose, s.SchoolName, o.OfficeName, d.DateEncoded, d.DateReceived, d.Status
+            FROM DOCUMENTS d
+            JOIN USERS u ON d.UserID = u.UserID
+            JOIN DOCUMENT_TYPE dt ON d.DocTypeID = dt.DocTypeID
+            LEFT JOIN SCHOOLS s ON d.SchoolID = s.SchoolID
+            LEFT JOIN OFFICES o ON d.SchoolID IS NULL AND d.OfficeID = o.OfficeID
+            WHERE d.OfficeID = %s
+            ORDER BY d.DateReceived DESC
+        """
+        documents = db.execute(query, (cashier_office_id,)).fetchall()
+
+        # Pagination setup
+        page = request.args.get('page', 1, type=int)
+        per_page = 10
+        total_documents = len(documents)
+        total_pages = (total_documents // per_page) + (1 if total_documents % per_page > 0 else 0)
+        paginated_documents = documents[(page - 1) * per_page:page * per_page]
+
+        # Render the 'cashier_documents.html' template with paginated data
+        return render_template('cashier_documents.html', documents=paginated_documents, 
+                               total_pages=total_pages, current_page=page)
+    except Exception as e:
+        print(f"Error fetching documents: {e}")
+        return render_template('cashier_office/cashier_documents.html', documents=[], total_pages=0, current_page=1)
+
+#DISPLAY FORWARDED DOCUMENTS FOR CASHIER
+@app.route('/cashier_forwarded_documents', methods=['GET'])
+def cashier_forwarded_documents():
+    # Pagination logic
+    page = request.args.get('page', 1, type=int)  # Get current page from URL parameters
+    per_page = 10  # Set number of documents per page
+    offset = (page - 1) * per_page
+
+    # Fetch forwarded documents from the database
+    forwarded_documents = get_forwarded_documents(offset, per_page)  # Adjust this function as needed
+    total_documents = len(forwarded_documents)  # Adjust this according to your query
+    total_pages = (total_documents // per_page) + (total_documents % per_page > 0)  # Calculate total pages
+
+    return render_template('cashier_office/cashier_forwarded_documents.html', 
+                           forwarded_documents=forwarded_documents,
+                           current_page=page,
+                           total_pages=total_pages)
+
+def get_forwarded_documents(offset, limit):
+    # Example query to get forwarded documents (adjust according to your schema)
+    return db.session.query(Document).filter(Document.Status == 'Forwarded') \
+        .order_by(Document.DateEncoded.desc()).offset(offset).limit(limit).all()
+
 
 # LOG OUT ROUTE
 @app.route('/logout')

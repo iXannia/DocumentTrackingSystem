@@ -14,13 +14,19 @@
     <section id="sidebar">
         <a href="{{ url_for('_records_dashboard') }}" class="brand">
             <i class='bx bxs-smile'></i>
-            <span class="text">DepEd Cebu City</span>
+            <span class="text">DepEd Cebu City - Records Office</span>
         </a>
         <ul class="side-menu top">
             <li class="active">
                 <a href="{{ url_for('_records_dashboard') }}">
                     <i class='bx bxs-dashboard'></i>
                     <span class="text">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Tracking Documents</span>
                 </a>
             </li>
             <li>
@@ -85,7 +91,7 @@
             </div>
             
             <!-- Form to Add New Document -->
-            <form id="addDocumentForm" method="POST" action="{{ url_for('staff_add_document') }}">    
+            <form id="addDocumentForm" method="POST">    
                 <div class="table-data">
                     <div class="order">
                         <div class="head">
@@ -112,52 +118,50 @@
                     </div>
                 </div>
             </form>
-            
+            <!-- Modal for displaying success message -->
+            <div id="successModal" class="modal">
+                <div class="modal-content">
+                    <p>Document successfully created!</p>
+                    <button id="closeModalBtn">OK</button>
+                </div>
+            </div>
+
+            <!-- Custom Script -->
+            <script>
+                document.getElementById('addDocumentForm').addEventListener('submit', function (e) {
+                    e.preventDefault();  // Prevent the form from submitting the default way
+
+                    let formData = new FormData(this);
+
+                    fetch('{{ url_for("staff_add_document") }}', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Show the success modal
+                            const modal = document.getElementById('successModal');
+                            modal.style.display = 'flex';
+
+                            // Close modal when clicking "OK"
+                            document.getElementById('closeModalBtn').addEventListener('click', function () {
+                                modal.style.display = 'none';
+                            });
+                        } else if (data.error) {
+                            alert('Error: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                });
+            </script>
         </main>
         <!-- MAIN -->
     </section>
     <!-- CONTENT -->
 
     <script src="script.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', (event) => {
-            let previousURL = window.location.href;
-        
-            // Track URL changes
-            function trackURLChange() {
-                const currentURL = window.location.href;
-                if (previousURL !== currentURL) {
-                    previousURL = currentURL;
-                    reportNavigationChange('URL Change', currentURL);
-                }
-            }
-        
-            // Detect back and forward navigation
-            window.onpopstate = function(event) {
-                reportNavigationChange('Back or Forward', window.location.href);
-            };
-        
-            // Report to the server
-            function reportNavigationChange(action, url) {
-                fetch('/track_navigation', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ action: action, url: url })
-                }).then(response => response.json()).then(data => {
-                    console.log('Navigation tracked:', data);
-                }).catch(error => {
-                    console.error('Error tracking navigation:', error);
-                });
-            }
-        
-            // Track initial load
-            reportNavigationChange('Page Load', window.location.href);
-        
-            // Monitor URL changes
-            setInterval(trackURLChange, 500); // Check for URL changes every 500ms
-        });
-    </script>
 </body>
 </html>

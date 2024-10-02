@@ -7,30 +7,30 @@
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="../static/dashboard.css">
-    <title>Staff Dashboard</title>
+    <title>Budget Office Dashboard</title>
 </head>
 <body>
     <!-- SIDEBAR -->
     <section id="sidebar">
-        <a href="_records_dashboard" class="brand" aria-label="Home">
+        <a href="{{ url_for('_budget_dashboard') }}" class="brand">
             <i class='bx bxs-smile'></i>
-            <span class="text">DepEd Cebu City - Records Office</span>
+            <span class="text">DepEd Cebu City - Budget Office</span>
         </a>
         <ul class="side-menu top">
             <li>
-                <a href="_records_dashboard" aria-label="Dashboard Home">
+                <a href="{{ url_for('_budget_dashboard') }}">
                     <i class='bx bxs-dashboard'></i>
                     <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="{{ url_for('track_budget_documents') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Tracking Documents</span>
+                    <span class="text">Track Documents</span>
                 </a>
             </li>
             <li class="active">
-                <a href="receive_documents" aria-label="Track Document">
+                <a href="{{ url_for('budget_documents') }}">
                     <i class='bx bxs-file'></i>
                     <span class="text">Received Documents</span>
                 </a>
@@ -56,7 +56,7 @@
         </ul>
         <ul class="side-menu">
             <li>
-                <a href="login" class="logout" aria-label="Logout">
+                <a href="{{ url_for('logout') }}" class="logout">
                     <i class='bx bxs-log-out-circle'></i>
                     <span class="text">Logout</span>
                 </a>
@@ -83,11 +83,11 @@
                     <h1>All Documents</h1>
                     <ul class="breadcrumb">
                         <li>
-                            <a class="active" href="{{ url_for('_records_dashboard') }}">Dashboard</a>
+                            <a class="active" href="{{ url_for('_budget_dashboard') }}">Dashboard</a>
                         </li>
                         <li><i class='bx bx-chevron-right'></i></li>
                         <li>
-                            <a class="active" href="{{ url_for('_records_dashboard') }}">Received Documents</a>
+                            <a class="active" href="{{ url_for('_budget_dashboard') }}">Received Documents</a>
                         </li>
                     </ul>
                 </div>
@@ -106,7 +106,7 @@
                                 <th>Type</th>
                                 <th>Details</th>
                                 <th>Purpose</th>
-                                <th>School/Office</th> <!-- Existing column -->
+                                <th>School/Office</th>
                                 <th>Date Encoded</th>
                                 <th>Date Received</th>
                                 <th>Status</th>
@@ -140,8 +140,7 @@
                                     <td colspan="9">No documents found.</td>
                                 </tr>
                             {% endif %}
-                        </tbody>
-                                              
+                        </tbody>                        
                     </table>
                 </div>
             </div>
