@@ -24,33 +24,33 @@
                 </a>
             </li>
             <li>
+                <a href="cashier_encoded" aria-label="Encoded Document">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Encoded Documents</span>
+                </a>
+            </li>
+            <li class="active">
+                <a href="{{ url_for('cashier_documents') }}">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Document for Receive</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Document for Action</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Document for Release</span>
+                </a>
+            </li>
+            <li>
                 <a href="{{ url_for('track_cashier_documents') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Track Documents</span>
-                </a>
-            </li>
-            <li>
-                <a href="cashier_documents" aria-label="Received Document">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Received Documents</span>
-                </a>
-            </li>
-            <li>
-                <a href="cashier_forwarded_documents" aria-label="Forwarded Documents" class="active">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Forwarded Documents</span>
-                </a>
-            </li>
-            <li>
-                <a href="#">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Pending Documents</span>
-                </a>
-            </li>
-            <li>
-                <a href="#">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Return Documents</span>
+                    <span class="text">History</span>
                 </a>
             </li>
         </ul>
@@ -101,6 +101,7 @@
                     <table>
                         <thead>
                             <tr>
+                                <th>Document No</th>
                                 <th>Tracking Number</th>
                                 <th>User</th>
                                 <th>Type</th>
@@ -108,14 +109,15 @@
                                 <th>Purpose</th>
                                 <th>School/Office</th>
                                 <th>Date Encoded</th>
-                                <th>Date Forwarded</th>
+                                <th>Date Received</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% if forwarded_documents %}
-                                {% for document in forwarded_documents %}
+                            {% if documents %}
+                                {% for document in documents %}
                                 <tr>
+                                    <td>{{ document.DocNo }}</td>
                                     <td>{{ document.TrackingNumber }}</td>
                                     <td>{{ document.Firstname }} {{ document.Lastname }}</td>
                                     <td>{{ document.DocTypeName }}</td>
@@ -131,13 +133,13 @@
                                         {% endif %}
                                     </td>
                                     <td>{{ document.DateEncoded }}</td>
-                                    <td>{{ document.DateForwarded }}</td>
+                                    <td>{{ document.DateReceived }}</td>
                                     <td><span class="status {{ document.Status|lower }}">{{ document.Status }}</span></td>
                                 </tr>
                                 {% endfor %}
                             {% else %}
                                 <tr>
-                                    <td colspan="9">No forwarded documents found.</td>
+                                    <td colspan="11">No documents found.</td>
                                 </tr>
                             {% endif %}
                         </tbody>                        

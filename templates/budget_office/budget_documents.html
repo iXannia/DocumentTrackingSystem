@@ -17,40 +17,40 @@
             <span class="text">DepEd Cebu City - Budget Office</span>
         </a>
         <ul class="side-menu top">
-            <li>
+            <li class="active">
                 <a href="{{ url_for('_budget_dashboard') }}">
                     <i class='bx bxs-dashboard'></i>
                     <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url_for('track_budget_documents') }}">
+                <a href="budget_encoded" aria-label="Encoded Document">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Track Documents</span>
+                    <span class="text">Encoded Documents</span>
                 </a>
             </li>
             <li class="active">
                 <a href="{{ url_for('budget_documents') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Received Documents</span>
+                    <span class="text">Document for Receive</span>
                 </a>
             </li>
             <li>
                 <a href="#">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Forwarded Documents</span>
+                    <span class="text">Document for Action</span>
                 </a>
             </li>
             <li>
                 <a href="#">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Pending Documents</span>
+                    <span class="text">Document for Release</span>
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="{{ url_for('track_budget_documents') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Return Documents</span>
+                    <span class="text">History</span>
                 </a>
             </li>
         </ul>

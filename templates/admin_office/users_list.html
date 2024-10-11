@@ -16,25 +16,61 @@
     <section id="sidebar">
         <a href="{{ url_for('_admin_dashboard') }}" class="brand">
             <i class='bx bxs-smile'></i>
-            <span class="text">DepEd Cebu City</span>
+            <span class="text">DepEd Cebu City - ADMIN</span>
         </a>
         <ul class="side-menu top">
-            <li class="active">
-                <a href="{{ url_for('_admin_dashboard') }}">
+            <li>
+                <a href="{{ url_for('_admin_dashboard') }}" aria-label="Dashboard Home">
                     <i class='bx bxs-dashboard'></i>
-                    <span class="text">Home</span>
+                    <span class="text">Dashboard</span>
+                </a>
+            </li>
+            <li class="active">
+                <a href="{{ url_for('track_admin_documents') }}">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Track Documents</span>
                 </a>
             </li>
             <li>
                 <a href="#">
-                    <i class='bx bxs-message-dots'></i>
-                    <span class="text">Messages</span>
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Received Documents</span>
                 </a>
             </li>
             <li>
                 <a href="#">
-                    <i class='bx bxs-group'></i>
-                    <span class="text">Team</span>
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Forwarded Documents</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Pending Documents</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Return Documents</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Users List</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Register User</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Register Staff</span>
                 </a>
             </li>
         </ul>
@@ -72,8 +108,8 @@
                     <td>
                         {% if user.Role == 1 %}
                             Admin
-                        {% elif user.Role == 2 %}
-                            Teacher
+                        {% elif user.Role == 3 %}
+                            Staff
                         {% else %}
                             User
                         {% endif %}

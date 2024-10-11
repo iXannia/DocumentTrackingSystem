@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Boxicons -->
+    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../static/dashboard.css">
+    <title>HRMU Dashboard</title>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <section id="sidebar">
+        <a href="{{ url_for('_hrmu_dashboard') }}" class="brand">
+            <i class='bx bxs-smile'></i>
+            <span class="text">DepEd Cebu City - HRMU Office</span>
+        </a>
+        <ul class="side-menu top">
+            <li>
+                <a href="{{ url_for('_hrmu_dashboard') }}">
+                    <i class='bx bxs-dashboard'></i>
+                    <span class="text">Dashboard</span>
+                </a>
+            </li>
+            <li  class="active">
+                <a href="hrmu_encoded" aria-label="Encoded Document">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Encoded Documents</span>
+                </a>
+            </li>
+            <li>
+                <a href="hrmu_documents" aria-label="Document for Receive">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Document for Receive</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Document for Action</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Document for Release</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('track_hrmu_documents') }}">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">History</span>
+                </a>
+            </li>
+        </ul>
+        <ul class="side-menu">
+            <li>
+                <a href="login" class="logout" aria-label="Logout">
+                    <i class='bx bxs-log-out-circle'></i>
+                    <span class="text">Logout</span>
+                </a>
+            </li>
+        </ul>
+    </section>
+    <!-- SIDEBAR -->
+
+    <!-- CONTENT -->
+    <section id="content">
+        <!-- NAVBAR -->
+        <nav>
+            <form action="#"></form>
+            <a href="#" class="profile">
+                <img src="img/people.png" alt="User Profile Image">
+            </a>
+        </nav>
+        <!-- NAVBAR -->
+
+        <!-- MAIN -->
+        <main>
+            <div class="head-title">
+                <div class="left">
+                    <h1>All Documents</h1>
+                    <ul class="breadcrumb">
+                        <li>
+                            <a class="active" href="{{ url_for('_records_dashboard') }}">Dashboard</a>
+                        </li>
+                        <li><i class='bx bx-chevron-right'></i></li>
+                        <li>
+                            <a class="active" href="{{ url_for('cashier_encoded') }}">Encoded Documents</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="table-data">
+                <div class="order">
+                    <div class="head">
+                        <h3>Documents</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tracking Number</th>
+                                <th>User</th>
+                                <th>Type</th>
+                                <th>Details</th>
+                                <th>Purpose</th>
+                                <th>Forward To</th>
+                                <th>Date Encoded</th>
+                                <th>Date Received</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if documents %}
+                                {% for document in documents %}
+                                <tr>
+                                    <td>{{ document.TrackingNumber }}</td>
+                                    <td>{{ document.Firstname }} {{ document.Lastname }}</td>
+                                    <td>{{ document.DocTypeName }}</td>
+                                    <td>{{ document.DocDetails }}</td>
+                                    <td>{{ document.DocPurpose }}</td>
+                                    <td>{{ document.SchoolOrOffice }}</td> <!-- Display School or Office -->
+                                    <td>{{ document.DateEncoded }}</td>
+                                    <td>{{ document.DateReceived }}</td>
+                                    <td><span class="status {{ document.Status|lower }}">{{ document.Status }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="9">No documents found.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>                        
+                    </table>                    
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                {% if total_pages > 1 %}
+                    <ul>
+                        <!-- Previous button -->
+                        <li class="{% if current_page == 1 %}disabled{% endif %}">
+                            <a href="?page={{ current_page - 1 }}">Prev</a>
+                        </li>
+
+                        <!-- Page numbers -->
+                        {% for p in range(1, total_pages + 1) %}
+                            <li class="{% if current_page == p %}active{% endif %}">
+                                <a href="?page={{ p }}">{{ p }}</a>
+                            </li>
+                        {% endfor %}
+
+                        <!-- Next button -->
+                        <li class="{% if current_page == total_pages %}disabled{% endif %}">
+                            <a href="?page={{ current_page + 1 }}">Next</a>
+                        </li>
+                    </ul>
+                {% endif %}
+            </div>
+            <!-- Pagination End -->
+
+        </main>
+        <!-- MAIN -->
+    </section>
+    <!-- CONTENT -->
+
+    <script src="../static/script.js"></script>
+</body>
+</html>

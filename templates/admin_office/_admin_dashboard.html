@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="../static/dashboard.css">
+    <title>Admin Office Dashboard</title>
+</head>
+<body>
+    <section id="sidebar">
+        <a href="{{ url_for('_admin_dashboard') }}" class="brand">
+            <i class='bx bxs-smile'></i>
+            <span class="text">DepEd Cebu City - Admin Office</span>
+        </a>
+        <ul class="side-menu top">
+            <li class="active">
+                <a href="{{ url_for('_admin_dashboard') }}">
+                    <i class='bx bxs-dashboard'></i>
+                    <span class="text">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" aria-label="Encoded Document">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Encoded Documents</span>
+                </a>
+            </li>
+            <li>
+                <a href="ict_documents" aria-label="Document for Receive">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Document for Receive</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Document for Action</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Document for Release</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">History</span>
+                </a>
+            </li>
+        </ul>
+        <ul class="side-menu">
+            <li>
+                <a href="{{ url_for('logout') }}" class="logout">
+                    <i class='bx bxs-log-out-circle'></i>
+                    <span class="text">Logout</span>
+                </a>
+            </li>
+        </ul>
+    </section>
+
+    <section id="content">
+        <nav>
+            <form action="#"></form>
+            <a href="#" class="profile">
+                <img src="img/people.png" alt="User Profile">
+            </a>
+        </nav>
+
+        <main>
+            <div class="head-title">
+                <div class="left">
+                    <h1>[ADMIN OFFICE] Hi! {{ user.Firstname }} {{ user.Middlename[0] if user.Middlename else '' }}. {{ user.Lastname }}</h1>
+                    <ul class="breadcrumb">
+                        <li>
+                            <a href="{{ url_for('_admin_dashboard') }}">Dashboard</a>
+                        </li>
+                        <li><i class='bx bx-chevron-right'></i></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Add jQuery for AJAX -->
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+            <!-- Form to Add New Document -->
+            <form id="addDocumentForm" method="POST">
+                <div class="table-data">
+                    <div class="order">
+                        <div class="head">
+                            <h3>Add New Document</h3>
+                        </div>
+            
+                        <div class="container">
+                            <label for="doctype">Document Type:</label>
+                            <select name="doctype" required aria-label="doctype">
+                                <option value="">Select Document Type</option>
+                                {% for doctype in document_type %}
+                                    <option value="{{ doctype[0] }}">{{ doctype[1] }}</option>
+                                {% endfor %}
+                            </select>
+            
+                            <label for="docdetails">Document Details:</label>
+                            <input type="text" name="docdetails" placeholder="Enter document details" required>
+            
+                            <label for="docpurpose">Document Purpose:</label>
+                            <input type="text" name="docpurpose" placeholder="Enter document purpose" required>
+            
+                            <!-- Office Dropdown (Destination) -->
+                            <label for="office">Send To Office:</label>
+                            <select name="office" id="office" required aria-label="Office">
+                                <option value="">Select Office</option>
+                                {% for office in offices %}
+                                    <option value="{{ office[0] }}">{{ office[1] }}</option>
+                                {% endfor %}
+                            </select>
+            
+                            <button type="submit">Submit</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Modal for displaying success message -->
+            <div id="successModal" class="modal">
+                <div class="modal-content">
+                    <p>Document successfully created!</p>
+                    <button id="closeModalBtn">OK</button>
+                </div>
+            </div>
+
+            <script>
+                $(document).ready(function() {
+                    $('#addDocumentForm').on('submit', function(e) {
+                        e.preventDefault();  // Prevent the form from submitting the default way
+
+                        $.ajax({
+                            type: 'POST',
+                            url: "{{ url_for('staff_add_document') }}",  // Your Flask route
+                            data: $(this).serialize(),  // Serialize the form data
+                            success: function(response) {
+                                if (response.success) {
+                                    // Show the success modal
+                                    $('#successModal').css('display', 'flex');
+                                } else if (response.error) {
+                                    alert('Error: ' + response.error);
+                                }
+                            },
+                            error: function(xhr) {
+                                alert('Error: ' + xhr.responseText);
+                            }
+                        });
+                    });
+
+                    // Close modal when clicking "OK"
+                    $('#closeModalBtn').on('click', function () {
+                        $('#successModal').css('display', 'none');
+                    });
+                });
+            </script>
+        </main>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html>

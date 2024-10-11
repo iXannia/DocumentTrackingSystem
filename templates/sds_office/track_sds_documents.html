@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Boxicons -->
+    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../static/dashboard.css">
+    <title>Tracking Documents - SDS Office</title>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <section id="sidebar">
+        <a href="{{ url_for('_sds_dashboard') }}" class="brand" aria-label="Home">
+            <i class='bx bxs-smile'></i>
+            <span class="text">DepEd Cebu City - SDS Office</span>
+        </a>
+        <ul class="side-menu top">
+            <li>
+                <a href="{{ url_for('_sds_dashboard') }}" aria-label="Dashboard Home">
+                    <i class='bx bxs-dashboard'></i>
+                    <span class="text">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="sds_encoded" aria-label="Encoded Document">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Encoded Documents</span>
+                </a>
+            </li>
+            <li>
+                <a href="sds_documents" aria-label="Document for Receive">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Document for Receive</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Document for Action</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Document for Release</span>
+                </a>
+            </li>
+            <li   class="active">
+                <a href="{{ url_for('track_sds_documents') }}">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">History</span>
+                </a>
+            </li>
+        </ul>
+        <ul class="side-menu">
+            <li>
+                <a href="{{ url_for('logout') }}" class="logout" aria-label="Logout">
+                    <i class='bx bxs-log-out-circle'></i>
+                    <span class="text">Logout</span>
+                </a>
+            </li>
+        </ul>
+    </section>
+    <!-- SIDEBAR -->
+
+    <!-- CONTENT -->
+    <section id="content">
+        <!-- NAVBAR -->
+        <nav>
+            <form action="#"></form>
+            <a href="#" class="profile">
+                <img src="img/people.png" alt="User Profile Image">
+            </a>
+        </nav>
+        <!-- NAVBAR -->
+
+        <!-- MAIN -->
+        <main>
+            <div class="head-title">
+                <div class="left">
+                    <h1>Tracking Documents</h1>
+                    <ul class="breadcrumb">
+                        <li>
+                            <a class="active" href="{{ url_for('_sds_dashboard') }}">Dashboard</a>
+                        </li>
+                        <li><i class='bx bx-chevron-right'></i></li>
+                        <li>
+                            <a class="active" href="{{ url_for('track_sds_documents') }}">Tracking Documents</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="table-data">
+                <div class="order">
+                    <div class="head">
+                        <h1>Tracking Documents - SDS Office</h1>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tracking Number</th>
+                                <th>User</th>
+                                <th>Type</th>
+                                <th>Details</th>
+                                <th>Purpose</th>
+                                <th>Date Encoded</th>
+                                <th>Date Received</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for document in documents %}
+                            <tr>
+                                <td>{{ document.TrackingNumber }}</td>
+                                <td>{{ document.Firstname }} {{ document.Lastname }}</td>
+                                <td>{{ document.DocTypeName }}</td>
+                                <td>{{ document.DocDetails }}</td>
+                                <td>{{ document.DocPurpose }}</td>
+                                <td>{{ document.DateEncoded }}</td>
+                                <td>{{ document.DateReceived }}</td>
+                                <td>{{ document.Status }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="8">No documents found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                {% if total_pages > 1 %}
+                    <div class="pagination">
+                        {% if current_page > 1 %}
+                            <a href="{{ url_for('track_sds_documents', page=current_page - 1) }}">Previous</a>
+                        {% endif %}
+
+                        {% for page in range(1, total_pages + 1) %}
+                            {% if page == current_page %}
+                                <strong>{{ page }}</strong>
+                            {% else %}
+                                <a href="{{ url_for('track_sds_documents', page=page) }}">{{ page }}</a>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if current_page < total_pages %}
+                            <a href="{{ url_for('track_sds_documents', page=current_page + 1) }}">Next</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            <!-- Pagination End -->
+        </main>
+        <!-- MAIN -->
+    </section>
+    <!-- CONTENT -->
+
+    <script src="../static/script.js"></script>
+</body>
+</html>

@@ -21,33 +21,33 @@
                 </a>
             </li>
             <li>
-                <a href="{{ url_for('track_budget_documents') }}">
+                <a href="budget_encoded" aria-label="Encoded Document">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Track Documents</span>
+                    <span class="text">Encoded Documents</span>
                 </a>
             </li>
             <li>
                 <a href="{{ url_for('budget_documents') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Received Documents</span>
+                    <span class="text">Document for Receive</span>
                 </a>
             </li>
             <li>
                 <a href="#">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Forwarded Documents</span>
+                    <span class="text">Document for Action</span>
                 </a>
             </li>
             <li>
                 <a href="#">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Pending Documents</span>
+                    <span class="text">Document for Release</span>
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="{{ url_for('track_budget_documents') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Return Documents</span>
+                    <span class="text">History</span>
                 </a>
             </li>
         </ul>
@@ -92,30 +92,37 @@
                         <div class="head">
                             <h3>Add New Document</h3>
                         </div>
-
+            
                         <div class="container">
                             <label for="doctype">Document Type:</label>
                             <select name="doctype" required aria-label="doctype">
+                                <option value="">Select Document Type</option>
                                 {% for doctype in document_type %}
-                                    <option value="{{ doctype.DocTypeID }}">{{ doctype.DocTypeName }}</option>
+                                    <option value="{{ doctype[0] }}">{{ doctype[1] }}</option>
                                 {% endfor %}
                             </select>
-
+            
                             <label for="docdetails">Document Details:</label>
                             <input type="text" name="docdetails" placeholder="Enter document details" required>
-
+            
                             <label for="docpurpose">Document Purpose:</label>
                             <input type="text" name="docpurpose" placeholder="Enter document purpose" required>
-
-                            <!-- Hidden field to specify the office submitting the document -->
-                            <input type="hidden" name="office_id" value="9">  <!-- Assuming 9 is the OfficeID for BUDGET OFFICE -->
-
+            
+                            <!-- Office Dropdown (Destination) -->
+                            <label for="office">Send To Office:</label>
+                            <select name="office" id="office" required aria-label="Office">
+                                <option value="">Select Office</option>
+                                {% for office in offices %}
+                                    <option value="{{ office[0] }}">{{ office[1] }}</option>
+                                {% endfor %}
+                            </select>
+            
                             <button type="submit">Submit</button>
                         </div>
                     </div>
                 </div>
-            </form>
-
+            </form>          
+            
             <!-- Modal for displaying success message -->
             <div id="successModal" class="modal">
                 <div class="modal-content">

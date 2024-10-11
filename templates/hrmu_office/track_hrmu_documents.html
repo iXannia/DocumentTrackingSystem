@@ -17,40 +17,40 @@
             <span class="text">DepEd Cebu City - HRMU Office</span>
         </a>
         <ul class="side-menu top">
-            <li>
-                <a href="{{ url_for('_hrmu_dashboard') }}" aria-label="Dashboard Home">
+            <li class="active">
+                <a href="{{ url_for('_hrmu_dashboard') }}">
                     <i class='bx bxs-dashboard'></i>
                     <span class="text">Dashboard</span>
                 </a>
             </li>
-            <li class="active">
+            <li>
+                <a href="hrmu_encoded" aria-label="Encoded Document">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Encoded Documents</span>
+                </a>
+            </li>
+            <li>
+                <a href="hrmu_documents" aria-label="Document for Receive">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Document for Receive</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Document for Action</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Document for Release</span>
+                </a>
+            </li>
+            <li>
                 <a href="{{ url_for('track_hrmu_documents') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Track Documents</span>
-                </a>
-            </li>
-            <li>
-                <a href="#">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Received Documents</span>
-                </a>
-            </li>
-            <li>
-                <a href="#">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Forwarded Documents</span>
-                </a>
-            </li>
-            <li>
-                <a href="#">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Pending Documents</span>
-                </a>
-            </li>
-            <li>
-                <a href="#">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Return Documents</span>
+                    <span class="text">History</span>
                 </a>
             </li>
         </ul>

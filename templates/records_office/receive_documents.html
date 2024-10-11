@@ -24,33 +24,33 @@
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="encoded_documents" aria-label="Encoded Document">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Tracking Documents</span>
+                    <span class="text">Encoded Documents</span>
                 </a>
             </li>
             <li class="active">
                 <a href="receive_documents" aria-label="Track Document">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Received Documents</span>
+                    <span class="text">Documents for Receive</span>
                 </a>
             </li>
             <li>
                 <a href="#">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Forwarded Documents</span>
+                    <span class="text">Document for Action</span>
                 </a>
             </li>
             <li>
                 <a href="#">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Pending Documents</span>
+                    <span class="text">Document for Release</span>
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="{{ url_for('track_records_documents') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Return Documents</span>
+                    <span class="text">History</span>
                 </a>
             </li>
         </ul>
@@ -109,7 +109,7 @@
                                 <th>School/Office</th> <!-- Existing column -->
                                 <th>Date Encoded</th>
                                 <th>Date Received</th>
-                                <th>Status</th>
+                                <th>Remarks</th>
                             </tr>
                         </thead>
                         <tbody>
