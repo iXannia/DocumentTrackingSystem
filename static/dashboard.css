@@ -393,11 +393,14 @@ body {
 
 
 
-
+#content main .container button{
+	margin: 30px 38%;
+}
 
 #content main .table-data {
 	display: flex;
 	flex-wrap: wrap;
+	border-radius: 20px;
 	grid-gap: 24px;
 	margin-top: 10px;
 	width: 100%;
@@ -435,15 +438,15 @@ body {
 }
 #content main .table-data .order table th {
 	padding-bottom: 12px;
-	font-size: 13px;
+	font-size: 16px;
 	text-align: left;
 	border-bottom: 1px solid var(--grey);
 }
 #content main .table-data .order table td {
-	padding: 16px 0;
+	padding: 16px 0px;
 }
 #content main .table-data .order table tr td:first-child {
-	display: flex;
+	/* display: flex; */
 	align-items: center;
 	grid-gap: 12px;
 	padding-left: 6px;
@@ -456,9 +459,10 @@ body {
 }
 #content main .table-data .order table tbody tr:hover {
 	background: var(--grey);
+	transform: scale(1.005); /* Slightly enlarge on hover */
 }
 #content main .table-data .order table tr td .status {
-	font-size: 10px;
+	font-size: 12px;
 	padding: 6px 16px;
 	color: var(--light);
 	border-radius: 20px;
@@ -472,8 +476,16 @@ body {
 }
 #content main .table-data .order table tr td .status.pending {
 	background: var(--orange);
+	margin-left: -5px; /* Adjust left position slightly */
 }
-
+#content main .table-data .order table tr td .status.pending:hover {
+	background: var(--red);
+	transform: scale(1.05); /* Slightly enlarge on hover */
+}
+#content main .table-data .order table tr td .status.received {
+	background: var(--yellow);
+	margin-left: -5px; /* Adjust left position slightly */
+}
 
 #content main .table-data .todo {
 	flex-grow: 1;
@@ -575,6 +587,7 @@ body {
     display: block;
 }
 
+
 label {
     display: block;
     margin-bottom: 8px;
@@ -595,7 +608,7 @@ button {
     background-color: #04AA6D;
     color: white;
     padding: 14px 20px;
-    margin: 30px 38%;
+    /* margin: 30px 38%; */
     border: none;
     cursor: pointer;
     width: 20%;
@@ -610,6 +623,7 @@ button:hover {
 .action-buttons {
 	display: flex;
 	gap: 5px;
+	
 }
 .action-buttons a {
 	text-decoration: none;
@@ -618,18 +632,78 @@ button:hover {
 	color: #fff;
 	font-size: 12px;
 }
+
+/* EDIT BUTTON */
 .action-buttons .edit {
 	background-color: #007bff; /* Blue */
+	padding: 6px 16px;
+    border-radius: 30px;
+    color: #fff;
+    font-size: 12px;
+    min-width: 80px;
+    font-weight: 700;
+    text-decoration: none; /* Remove underline from link */
+    margin-right: 5px; /* Space between buttons */
 }
-.action-buttons .delete {
-	background-color: #dc3545; /* Red */
-}
+/* END OF EDIT BUTTON */
+
+/* VIEW BUTTON */
 .action-buttons .view {
 	background-color: #28a745; /* Green */
+	padding: 6px 16px;
+    border-radius: 30px;
+    color: #fff;
+    font-size: 12px;
+    min-width: 80px;
+    font-weight: 700;
+    text-decoration: none; /* Remove underline from link */
+    margin-right: 5px; /* Space between buttons */
 }
-.action-buttons a:hover {
-	opacity: 0.8;
+/* END OF VIEW BUTTON */
+
+/* DELETE BUTTON */
+.action-buttons .delete {
+    background-color: #dc3545; /* Red */
+    padding: 6px 16px;
+    border-radius: 30px;
+    color: #fff;
+    font-size: 12px;
+    min-width: 80px;
+    font-weight: 700;
+    transition: background-color 0.3s, transform 0.2s; /* Smooth transition effects */
+    margin-left: -5px; /* Adjust left position slightly */
 }
+
+.action-buttons .delete:hover {
+    background-color: #c82333; /* Darker red on hover */
+    transform: scale(1.05); /* Slightly enlarge on hover */
+}
+
+.action-buttons .delete:disabled {
+    background-color: gray; /* Gray when disabled */
+    cursor: not-allowed; /* Change cursor to indicate disabled state */
+    opacity: 0.6; /* Slightly transparent */
+}
+/* END OF DELETE BUTTON*/
+
+/* RECEIVE BUTTON */
+.action-buttons .receive {
+    background-color: #b8c505; /* Red */
+    padding: 6px 16px;
+    border-radius: 30px;
+    color: #fff;
+    font-size: 12px;
+    min-width: 80px;
+    font-weight: 700;
+    transition: background-color 0.3s, transform 0.2s; /* Smooth transition effects */
+    margin-left: -5spx; /* Adjust left position slightly */
+}
+
+.action-buttons .receive:hover {
+    background-color: #333006; /* Darker red on hover */
+    transform: scale(1.05); /* Slightly enlarge on hover */
+}
+/* END OF RECEIVE BUTTON */
 
 /* PAGINATION */
 .pagination {
@@ -699,3 +773,4 @@ button:hover {
 	border-radius: 5px;
 	cursor: pointer;
 }
+

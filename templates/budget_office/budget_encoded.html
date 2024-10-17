@@ -23,34 +23,22 @@
                     <span class="text">Dashboard</span>
                 </a>
             </li>
-            <li  class="active">
-                <a href="budget_encoded" aria-label="Encoded Document">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Encoded Documents</span>
-                </a>
-            </li>
             <li>
                 <a href="{{ url_for('budget_documents') }}">
                     <i class='bx bxs-file'></i>
                     <span class="text">Document for Receive</span>
                 </a>
             </li>
-            <li>
-                <a href="#">
+            <li class="active">
+                <a href="budget_encoded" aria-label="Encoded Document">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Document for Action</span>
-                </a>
-            </li>
-            <li>
-                <a href="#">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Document for Release</span>
+                    <span class="text">My Documents</span>
                 </a>
             </li>
             <li>
                 <a href="{{ url_for('track_budget_documents') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">History</span>
+                    <span class="text">Track Documents</span>
                 </a>
             </li>
         </ul>
@@ -106,10 +94,11 @@
                                 <th>Type</th>
                                 <th>Details</th>
                                 <th>Purpose</th>
-                                <th>Forward To</th>
+                                <th>School/Office</th>
                                 <th>Date Encoded</th>
                                 <th>Date Received</th>
-                                <th>Remarks</th>
+                                <th>Status</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>

@@ -20,13 +20,13 @@
             <li>
                 <a href="_records_dashboard" aria-label="Dashboard Home">
                     <i class='bx bxs-dashboard'></i>
-                    <span class="text">Dashboard</span>
+                    <span class="text">Create Documents</span>
                 </a>
             </li>
             <li>
-                <a href="encoded_documents" aria-label="Encoded Document">
+                <a href="#" aria-label="Walkin Document">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Encoded Documents</span>
+                    <span class="text">Create Walk-in Documents</span>
                 </a>
             </li>
             <li class="active">
@@ -36,9 +36,9 @@
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="encoded_documents" aria-label="Encoded Document">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Document for Action</span>
+                    <span class="text">My Documents</span>
                 </a>
             </li>
             <li>
@@ -50,7 +50,7 @@
             <li>
                 <a href="{{ url_for('track_records_documents') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">History</span>
+                    <span class="text">Track Documents</span>
                 </a>
             </li>
         </ul>
@@ -106,10 +106,10 @@
                                 <th>Type</th>
                                 <th>Details</th>
                                 <th>Purpose</th>
-                                <th>School/Office</th> <!-- Existing column -->
+                                <th>School/Office</th>
                                 <th>Date Encoded</th>
-                                <th>Date Received</th>
-                                <th>Remarks</th>
+                                <th>Status</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -131,17 +131,23 @@
                                         {% endif %}
                                     </td>
                                     <td>{{ document.DateEncoded }}</td>
-                                    <td>{{ document.DateReceived }}</td>
                                     <td><span class="status {{ document.Status|lower }}">{{ document.Status }}</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <form action="{{ url_for('receive_document', doc_no=document.DocNo) }}" method="POST">
+                                                <input type="hidden" name="tracking_number" value="{{ document.TrackingNumber }}">
+                                                <button type="submit" class="receive" onclick="return confirm('Are you sure you want to receive this document?');">Receive</button>
+                                            </form>
+                                        </div>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             {% else %}
                                 <tr>
-                                    <td colspan="9">No documents found.</td>
+                                    <td colspan="10">No documents found.</td>
                                 </tr>
                             {% endif %}
                         </tbody>
-                                              
                     </table>
                 </div>
             </div>

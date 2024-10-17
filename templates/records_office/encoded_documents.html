@@ -20,13 +20,13 @@
             <li>
                 <a href="_records_dashboard" aria-label="Dashboard Home">
                     <i class='bx bxs-dashboard'></i>
-                    <span class="text">Dashboard</span>
+                    <span class="text">Create Documents</span>
                 </a>
             </li>
-            <li class="active">
-                <a href="encoded_documents" aria-label="Encoded Document">
+            <li>
+                <a href="#" aria-label="Walkin Document">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Encoded Documents</span>
+                    <span class="text">Create Walk-in Documents</span>
                 </a>
             </li>
             <li>
@@ -35,10 +35,10 @@
                     <span class="text">Documents for Receive</span>
                 </a>
             </li>
-            <li>
-                <a href="#">
+            <li class="active">
+                <a href="encoded_documents" aria-label="Encoded Document">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Document for Action</span>
+                    <span class="text">My Documents</span>
                 </a>
             </li>
             <li>
@@ -50,7 +50,7 @@
             <li>
                 <a href="{{ url_for('track_records_documents') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">History</span>
+                    <span class="text">Track Documents</span>
                 </a>
             </li>
         </ul>
@@ -71,7 +71,7 @@
         <nav>
             <form action="#"></form>
             <a href="#" class="profile">
-                <img src="img/people.png" alt="User Profile Image">
+                <img src="img/people.png" alt="User Profile">
             </a>
         </nav>
         <!-- NAVBAR -->
@@ -106,10 +106,11 @@
                                 <th>Type</th>
                                 <th>Details</th>
                                 <th>Purpose</th>
-                                <th>forward to</th>
+                                <th>School/Office</th>
                                 <th>Date Encoded</th>
                                 <th>Date Received</th>
-                                <th>Remarks</th>
+                                <th>Status</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>

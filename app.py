@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session, redirect, url_for, render_template, abort, make_response
+from flask import Flask, request, jsonify, session, redirect, url_for, render_template, abort, make_response, flash
 from functools import wraps
 import mysql.connector
 from datetime import datetime
@@ -714,8 +714,8 @@ def encoded_documents():
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # Fetch paginated documents for the user along with document type and school/office details
-        cursor.execute("""
+        # Fetch paginated documents for the user including received documents
+        cursor.execute("""        
             SELECT d.TrackingNumber, 
                    u.Firstname, 
                    u.Lastname, 
@@ -732,15 +732,19 @@ def encoded_documents():
             JOIN DOCUMENT_TYPE dt ON d.DocTypeID = dt.DocTypeID
             LEFT JOIN SCHOOLS s ON d.SchoolID = s.SchoolID
             LEFT JOIN OFFICES o ON d.OfficeIDToSend = o.OfficeID
-            WHERE d.UserID = %s
+            WHERE d.UserID = %s OR d.Status = 'Received'
             ORDER BY d.DateEncoded DESC
             LIMIT %s OFFSET %s
         """, (user_id, per_page, offset))
 
         documents = cursor.fetchall()
 
-        # Count total documents for the user
-        cursor.execute("SELECT COUNT(*) FROM DOCUMENTS WHERE UserID = %s", (user_id,))
+        # Count total documents for the user including received documents
+        cursor.execute("""
+            SELECT COUNT(*) 
+            FROM DOCUMENTS 
+            WHERE UserID = %s OR Status = 'Received'
+        """, (user_id,))
         total_documents = cursor.fetchone()['COUNT(*)']
         total_pages = (total_documents + per_page - 1) // per_page
 
@@ -788,6 +792,7 @@ def receive_documents():
             LEFT JOIN SCHOOLS s ON d.SchoolID = s.SchoolID
             LEFT JOIN OFFICES o ON d.OfficeID = o.OfficeID  -- Join with Offices
             WHERE d.OfficeIDToSend = %s  -- Filter by the OfficeID for Records Office
+              AND d.Status != 'received'   -- Exclude received documents
             ORDER BY d.DateEncoded DESC
             LIMIT %s OFFSET %s
         """, (session.get('office_id'), per_page, offset))  # Assuming office_id is stored in session
@@ -795,10 +800,11 @@ def receive_documents():
         documents = cursor.fetchall()
 
         # Count total documents forwarded to the Records Office created by USERS and STAFF
-        cursor.execute("""
+        cursor.execute(""" 
             SELECT COUNT(*) FROM DOCUMENTS d 
             JOIN USERS u ON d.UserID = u.UserID 
             WHERE d.OfficeIDToSend = %s 
+              AND d.Status != 'received'  -- Count only non-received documents
         """, (session.get('office_id'),))
         
         total_documents = cursor.fetchone()['COUNT(*)']
@@ -815,6 +821,56 @@ def receive_documents():
     finally:
         cursor.close()
         conn.close()
+
+@app.route('/success')
+def success_page():
+    return "Your details have been submitted successfully!"
+
+@app.route('/receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def handle_receive_document(doc_no):  # Renamed the function
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Update the status of the document to 'received'
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = %s, DateReceived = NOW()
+            WHERE DocNo = %s AND OfficeIDToSend = %s
+        """, ('received', doc_no, session.get('office_id')))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Document not found or already received."}), 404
+        
+        # 2. Insert the transaction into the TRANSACTIONS table
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, PreviousOfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType
+            )
+            VALUES (%s, %s, %s, %s, NOW(), %s, %s)
+        """, (
+            session.get('office_id'),  # Office receiving the document
+            None,  # Assuming there's no PreviousOfficeID in this case
+            doc_no,  # Document number being received
+            session.get('user_id'),  # The user performing the action
+            'received',  # Status of the transaction
+            'Receive'  # Type of transaction
+        ))
+
+        conn.commit()
+
+        return redirect(url_for('receive_documents'))
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
 
 # TRACK ALL DOCUMENTS IN RECORDS OFFICE / track_records_documents.html
 @app.route('/track_records_documents')
@@ -2484,9 +2540,6 @@ def staff_add_document():
     date_received = request.form.get('datereceived')
     status = 'Pending'
 
-    # Get the office ID to send the document from the form submission
-    office_id_to_send = request.form['office']  # This will fetch the selected office ID
-
     # Fetch the SchoolID associated with the user (staff)
     school_id = get_user_school_id(user_id)
 
@@ -2505,9 +2558,9 @@ def staff_add_document():
 
         # Insert the new document details
         cursor.execute("""
-            INSERT INTO DOCUMENTS (DocNo, UserID, DocTypeID, SchoolID, OfficeID, OfficeIDToSend, DocDetails, DocPurpose, DateEncoded, DateReceived, Status)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (next_doc_no, user_id, doc_type_id, school_id, office_id_of_user, office_id_to_send, doc_details, doc_purpose, date_encoded, date_received, status))
+            INSERT INTO DOCUMENTS (DocNo, UserID, DocTypeID, SchoolID, OfficeID, DocDetails, DocPurpose, DateEncoded, DateReceived, Status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (next_doc_no, user_id, doc_type_id, school_id, office_id_of_user, doc_details, doc_purpose, date_encoded, date_received, status))
         conn.commit()
 
         # Generate a tracking number for the new document
@@ -2534,6 +2587,7 @@ def staff_add_document():
             cursor.close()
         if conn:
             conn.close()
+
 
 # OFFICE USER ID
 def get_user_by_id(user_id):
@@ -2602,17 +2656,77 @@ def edit_document(doc_no):
     # Your code to handle the document editing
     pass
 
-#DELETE ACTION BUTTON
-@app.route('/delete_document/<int:doc_no>', methods=['POST'])
-def delete_document(doc_no):
-    # Your code to handle the document deletion
-    pass
-
 #VIEW ACTION BUTTON
 @app.route('/view_document/<int:doc_no>', methods=['GET'])
 def view_document(doc_no):
     # Your code to handle viewing the document
     pass
+
+
+#DELETE ACTION BUTTON
+@app.route('/delete_document/<string:doc_no>', methods=['POST'])
+def delete_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Check the document status before attempting to delete
+        cursor.execute("SELECT Status FROM DOCUMENTS WHERE TrackingNumber = %s", (doc_no,))
+        document = cursor.fetchone()
+
+        if document and document[0] == 'received':
+            flash('Error: Document cannot be deleted because it has already been received.', 'danger')
+            return redirect(url_for('document_tracking'))  # Redirect after failed deletion
+
+        # Proceed with deletion if the document is not received
+        cursor.execute("DELETE FROM DOCUMENTS WHERE TrackingNumber = %s", (doc_no,))
+        conn.commit()
+        flash('Document deleted successfully!', 'success')  # Show success message
+
+    except Exception as e:
+        flash(f'Error deleting document: {str(e)}', 'danger')  # Show error message
+    finally:
+        cursor.close()
+        conn.close()
+    
+    return redirect(url_for('document_tracking'))  # Redirect after deletion
+
+#RECEIVE ACTION BUTTON
+@app.route('/receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def receive_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Get the tracking number from the form data
+    tracking_number = request.form.get('tracking_number')
+
+    try:
+        # Update the document status to 'received'
+        cursor.execute("""
+            UPDATE DOCUMENTS 
+            SET Status = 'received' 
+            WHERE DocNo = %s
+        """, (doc_no,))
+        
+        conn.commit()  # Commit the changes
+
+        # Flash a message to indicate success
+        flash(f'Document {tracking_number} received successfully!', 'success')
+
+        # Redirect to receive documents page
+        return redirect(url_for('receive_documents'))
+
+    except Exception as e:
+        # Flash an error message or handle the error appropriately
+        flash(f'Error receiving document {tracking_number}: {str(e)}', 'error')
+        return redirect(url_for('receive_documents'))  # Redirect back to the receive documents page
+
+    finally:
+        cursor.close()
+        conn.close()
+
+    # This return statement is to satisfy the function requirements, though it should not be reached
+    return redirect(url_for('receive_documents'))  # Ensure this is the last line
 
 # LOG OUT ROUTE
 @app.route('/logout')

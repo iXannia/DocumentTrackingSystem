@@ -17,16 +17,10 @@
             <span class="text">DepEd Cebu City - Budget Office</span>
         </a>
         <ul class="side-menu top">
-            <li class="active">
+            <li>
                 <a href="{{ url_for('_budget_dashboard') }}">
                     <i class='bx bxs-dashboard'></i>
                     <span class="text">Dashboard</span>
-                </a>
-            </li>
-            <li>
-                <a href="budget_encoded" aria-label="Encoded Document">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Encoded Documents</span>
                 </a>
             </li>
             <li class="active">
@@ -36,21 +30,15 @@
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="budget_encoded" aria-label="Encoded Document">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Document for Action</span>
-                </a>
-            </li>
-            <li>
-                <a href="#">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Document for Release</span>
+                    <span class="text">My Documents</span>
                 </a>
             </li>
             <li>
                 <a href="{{ url_for('track_budget_documents') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">History</span>
+                    <span class="text">Track Documents</span>
                 </a>
             </li>
         </ul>
@@ -110,6 +98,7 @@
                                 <th>Date Encoded</th>
                                 <th>Date Received</th>
                                 <th>Status</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>

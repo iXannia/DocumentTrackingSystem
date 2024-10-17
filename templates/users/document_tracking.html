@@ -29,18 +29,6 @@
                     <span class="text">Track Document</span>
                 </a>
             </li>
-            <li>
-                <a href="#" aria-label="Messages">
-                    <i class='bx bxs-message-dots'></i>
-                    <span class="text">Messages</span>
-                </a>
-            </li>
-            <li>
-                <a href="#" aria-label="Team">
-                    <i class='bx bxs-group'></i>
-                    <span class="text">Team</span>
-                </a>
-            </li>
         </ul>
         <ul class="side-menu">
             <li>
@@ -81,6 +69,17 @@
                 </div>
             </div>
 
+            <!-- Display Flash Messages -->
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <ul class="flashes">
+                        {% for message in messages %}
+                            <li>{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endwith %}
+
             <div class="table-data">
                 <div class="order">
                     <div class="head">
@@ -100,7 +99,7 @@
                                 <th>Date Encoded</th>
                                 <th>Date Received</th>
                                 <th>Status</th>
-                                <th>Action</th> <!-- New column for action buttons -->
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -118,11 +117,16 @@
                                     <td><span class="status {{ document.Status|lower }}">{{ document.Status }}</span></td>
                                     <td>
                                         <div class="action-buttons">
-                                            <a href="{{ url_for('edit_document', doc_no=document.DocNo) }}" class="edit">Edit</a>
-                                            <a href="{{ url_for('view_document', doc_no=document.DocNo) }}" class="view">View</a>
-                                            <a href="{{ url_for('delete_document', doc_no=document.DocNo) }}" class="delete">Delete</a>
-                                        </div>
+                                            {% if document.Status != 'received' %}
+                                            <form action="{{ url_for('delete_document', doc_no=document.TrackingNumber) }}" method="POST" style="display:inline;">
+                                                <button type="submit" class="delete">Delete</button>
+                                            </form>
+                                            {% else %}
+                                                <button class="delete" disabled>Delete</button>
+                                            {% endif %}     
+                                        </div>                               
                                     </td>
+                                    
                                 </tr>
                                 {% endfor %}
                             {% else %}
@@ -131,7 +135,7 @@
                                 </tr>
                             {% endif %}
                         </tbody>
-                    </table>
+                    </table>                    
                 </div>
             </div>
         </main>
