@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Tracking System</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f4f8;
+            color: #333;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            width: 400px; /* Fixed width for consistency */
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #007bff;
+        }
+        .button-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .button-container {
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            background: #ffffff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+            flex: 1; /* Flex grow */
+            margin: 0 5px; /* Space between buttons */
+        }
+        .button-container:hover {
+            transform: translateY(-2px);
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%; /* Full width for buttons */
+        }
+        #create-doc-btn {
+            background-color: #28a745;
+            color: white;
+        }
+        #login-btn {
+            background-color: #007bff;
+            color: white;
+        }
+        #track-doc-btn {
+            background-color: #17a2b8;
+            color: white;
+            margin-top: 20px; /* Space above */
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .modal-content h2 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .modal-content label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .modal-content input, .modal-content textarea {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        .modal-content textarea {
+            resize: vertical;
+        }
+        .modal-content .btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .modal-content .btn:hover {
+            background-color: #0056b3;
+        }
+        .modal-content .btn.close {
+            background-color: #6c757d;
+        }
+        .modal-content .btn.close:hover {
+            background-color: #5a6268;
+        }
+        #search-results {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #333;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Document Tracking System</h1>
+        <div class="button-bar">
+            <div class="button-container">
+                <button id="create-doc-btn">Create Document</button>
+            </div>
+            <div class="button-container">
+                <button id="login-btn">Login</button>
+            </div>
+        </div>
+        <div class="button-container">
+            <button id="track-doc-btn">Track Document</button>
+        </div>
+    </div>
+
+    <!-- Create Document Modal -->
+    <div id="create-doc-modal" class="modal">
+        <div class="modal-content">
+            <h2>Create Document</h2>
+            <label for="doc-type">Document Type:</label>
+            <input type="text" id="doc-type" placeholder="Enter document type">
+            <label for="creator-name">Creator Name:</label>
+            <input type="text" id="creator-name" placeholder="Enter creator name">
+            <label for="email">Email:</label>
+            <input type="email" id="email" placeholder="Enter email">
+            <label for="subject">Subject:</label>
+            <input type="text" id="subject" placeholder="Enter subject">
+            <label for="details">Details:</label>
+            <textarea id="details" rows="4" placeholder="Enter details"></textarea>
+            <button class="btn" id="submit-create-doc">Submit</button>
+            <button class="btn close" id="close-create-doc">Close</button>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <h2>Login</h2>
+            <label for="username">Username:</label>
+            <input type="text" id="username" placeholder="Enter username">
+            <label for="password">Password:</label>
+            <input type="password" id="password" placeholder="Enter password">
+            <button class="btn" id="login-submit">Login</button>
+            <button class="btn close" id="close-login">Close</button>
+        </div>
+    </div>
+
+    <!-- Track Document Modal -->
+    <div id="track-doc-modal" class="modal">
+        <div class="modal-content">
+            <h2>Track Document</h2>
+            <label for="search">Search by Track Number:</label>
+            <input type="text" id="search" placeholder="Enter track number">
+            <button class="btn" id="search-btn">Search</button>
+            <div id="search-results"></div>
+            <button class="btn close" id="close-track-doc">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Dummy data for tracking
+        const documents = {
+            '123': { 
+                type: 'Report', 
+                creator: 'Alice', 
+                email: 'alice@example.com', 
+                subject: 'Monthly Report', 
+                details: 'Details about the monthly report.',
+                status: 'In Progress',
+                purpose: 'To analyze monthly performance'
+            },
+            '456': { 
+                type: 'Invoice', 
+                creator: 'Bob', 
+                email: 'bob@example.com', 
+                subject: 'Invoice #456', 
+                details: 'Details about the invoice.',
+                status: 'Completed',
+                purpose: 'Billing purposes'
+            }
+        };
+
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+            if (modalId === 'track-doc-modal') {
+                document.getElementById('search-results').innerHTML = ''; // Clear previous results
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        document.getElementById('create-doc-btn').addEventListener('click', function() {
+            openModal('create-doc-modal');
+        });
+        document.getElementById('login-btn').addEventListener('click', function() {
+            openModal('login-modal');
+        });
+        document.getElementById('track-doc-btn').addEventListener('click', function() {
+            openModal('track-doc-modal');
+        });
+
+        document.getElementById('close-create-doc').addEventListener('click', function() {
+            closeModal('create-doc-modal');
+        });
+        document.getElementById('close-login').addEventListener('click', function() {
+            closeModal('login-modal');
+        });
+        document.getElementById('close-track-doc').addEventListener('click', function() {
+            closeModal('track-doc-modal');
+        });
+
+        document.getElementById('search-btn').addEventListener('click', function() {
+            const searchValue = document.getElementById('search').value;
+            const searchResults = document.getElementById('search-results');
+
+            if (documents[searchValue]) {
+                const doc = documents[searchValue];
+                searchResults.innerHTML = `
+                    <p><strong>Track Number:</strong> ${searchValue}</p>
+                    <p><strong>Name:</strong> ${doc.subject}</p>
+                    <p><strong>Status:</strong> ${doc.status}</p>
+                    <p><strong>Type:</strong> ${doc.type}</p>
+                    <p><strong>Creator:</strong> ${doc.creator}</p>
+                    <p><strong>Email:</strong> ${doc.email}</p>
+                    <p><strong>Purpose:</strong> ${doc.purpose}</p>
+                    <p><strong>Details:</strong> ${doc.details}</p>
+                `;
+            } else {
+                searchResults.innerHTML = '<p>No document found with that track number.</p>';
+            }
+        });
+    </script>
+</body>
+</html>

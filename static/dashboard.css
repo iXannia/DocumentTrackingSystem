@@ -470,21 +470,62 @@ body {
 }
 #content main .table-data .order table tr td .status.completed {
 	background: var(--blue);
+	margin-left: -1px; /* Adjust left position slightly */
+	padding: 6px 13px;
+    border-radius: 30px;
+	text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    margin-right: 5px; /* Space between buttons */
 }
+
+#content main .table-data .order table tr td .status.complete {
+	background: var(--blue);
+	margin-left: -1px; /* Adjust left position slightly */
+	padding: 6px 13px;
+    border-radius: 30px;
+	text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    margin-right: 5px; /* Space between buttons */
+}
+
 #content main .table-data .order table tr td .status.process {
 	background: var(--yellow);
+	margin-left: -1px; /* Adjust left position slightly */
+	padding: 6px 21px;
+    border-radius: 30px;
+	text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    margin-right: 5px; /* Space between buttons */
 }
 #content main .table-data .order table tr td .status.pending {
 	background: var(--orange);
-	margin-left: -5px; /* Adjust left position slightly */
+	margin-left: -1px; /* Adjust left position slightly */
+	padding: 6px 21px;
+    border-radius: 30px;
+	text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    margin-right: 5px; /* Space between buttons */
 }
-#content main .table-data .order table tr td .status.pending:hover {
+
+/* #content main .table-data .order table tr td .status.pending:hover {
 	background: var(--red);
-	transform: scale(1.05); /* Slightly enlarge on hover */
-}
+	transform: scale(1.05); /* Slightly enlarge on hover
+} 
+*/
+
 #content main .table-data .order table tr td .status.received {
 	background: var(--yellow);
-	margin-left: -5px; /* Adjust left position slightly */
+	margin-left: -1px; /* Adjust left position slightly */
+	padding: 6px 18px;
+    border-radius: 30px;
+	text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    margin-right: 5px; /* Space between buttons */
 }
 
 #content main .table-data .todo {
@@ -506,12 +547,6 @@ body {
 }
 #content main .table-data .todo .todo-list li .bx {
 	cursor: pointer;
-}
-#content main .table-data .todo .todo-list li.completed {
-	border-left: 10px solid var(--blue);
-}
-#content main .table-data .todo .todo-list li.not-completed {
-	border-left: 10px solid var(--orange);
 }
 #content main .table-data .todo .todo-list li:last-child {
 	margin-bottom: 0;
@@ -639,11 +674,24 @@ button:hover {
 	padding: 6px 16px;
     border-radius: 30px;
     color: #fff;
+	text-align: center;
     font-size: 12px;
     min-width: 80px;
     font-weight: 700;
     text-decoration: none; /* Remove underline from link */
-    margin-right: 5px; /* Space between buttons */
+    margin-right: 10px; /* Space between buttons */
+	margin-left: -1px;
+}
+
+.action-buttons .edit:hover {
+    background-color: #002f61; /* Darker red on hover */
+    transform: scale(1.05); /* Slightly enlarge on hover */
+}
+
+.action-buttons .edit:disabled {
+    background-color: gray; /* Gray when disabled */
+    cursor: not-allowed; /* Change cursor to indicate disabled state */
+    opacity: 0.6; /* Slightly transparent */
 }
 /* END OF EDIT BUTTON */
 
@@ -652,12 +700,18 @@ button:hover {
 	background-color: #28a745; /* Green */
 	padding: 6px 16px;
     border-radius: 30px;
+	text-align: center;
     color: #fff;
     font-size: 12px;
     min-width: 80px;
     font-weight: 700;
-    text-decoration: none; /* Remove underline from link */
+	transition: background-color 0.3s, transform 0.2s;
     margin-right: 5px; /* Space between buttons */
+}
+
+.action-buttons .veiw:hover {
+    background-color: #165825; /* Darker red on hover */
+    transform: scale(1.05); /* Slightly enlarge on hover */
 }
 /* END OF VIEW BUTTON */
 
@@ -666,6 +720,7 @@ button:hover {
     background-color: #dc3545; /* Red */
     padding: 6px 16px;
     border-radius: 30px;
+	text-align: center;
     color: #fff;
     font-size: 12px;
     min-width: 80px;
@@ -675,7 +730,7 @@ button:hover {
 }
 
 .action-buttons .delete:hover {
-    background-color: #c82333; /* Darker red on hover */
+    background-color: #6e141d; /* Darker red on hover */
     transform: scale(1.05); /* Slightly enlarge on hover */
 }
 
@@ -687,7 +742,7 @@ button:hover {
 /* END OF DELETE BUTTON*/
 
 /* RECEIVE BUTTON */
-.action-buttons .receive {
+.action-buttons .Receive {
     background-color: #b8c505; /* Red */
     padding: 6px 16px;
     border-radius: 30px;
@@ -699,11 +754,63 @@ button:hover {
     margin-left: -5spx; /* Adjust left position slightly */
 }
 
-.action-buttons .receive:hover {
+.action-buttons .Receive:hover {
     background-color: #333006; /* Darker red on hover */
     transform: scale(1.05); /* Slightly enlarge on hover */
 }
 /* END OF RECEIVE BUTTON */
+
+/* COMPLETE BUTTON */
+.action-buttons .complete {
+    background-color: #484d06; /* Red */
+    padding: 6px 16px;
+    border-radius: 30px;
+	text-align: center;
+    color: #fff;
+    font-size: 12px;
+    min-width: 90px;
+    font-weight: 700;
+    transition: background-color 0.3s, transform 0.2s; /* Smooth transition effects */
+    margin-left: -5spx; /* Adjust left position slightly */
+}
+
+.action-buttons .complete:hover {
+    background-color: #333006; /* Darker red on hover */
+    transform: scale(1.05); /* Slightly enlarge on hover */
+}
+
+.action-buttons .complete:disabled {
+    background-color: gray; /* Gray when disabled */
+    cursor: not-allowed; /* Change cursor to indicate disabled state */
+    opacity: 0.6; /* Slightly transparent */
+}
+/* END OF COMPLETE BUTTON */
+
+/* FOWARD BUTTON */
+.action-buttons .forward {
+    background-color: #222411; /* Red */
+    padding: 6px 16px;
+    border-radius: 30px;
+	text-align: center;
+    color: #fff;
+    font-size: 12px;
+    min-width: 90px;
+    font-weight: 700;
+    transition: background-color 0.3s, transform 0.2s; /* Smooth transition effects */
+    margin-left: -5spx; /* Adjust left position slightly */
+}
+
+.action-buttons .forward:hover {
+    background-color: #333006; /* Darker red on hover */
+    transform: scale(1.05); /* Slightly enlarge on hover */
+}
+
+.action-buttons .forward:disabled {
+    background-color: gray; /* Gray when disabled */
+    cursor: not-allowed; /* Change cursor to indicate disabled state */
+    opacity: 0.6; /* Slightly transparent */
+}
+/* END OF FORWARD BUTTON */
 
 /* PAGINATION */
 .pagination {
@@ -743,34 +850,128 @@ button:hover {
     pointer-events: none;
 }
 
-/* Modal Styles */
+/* Modal CSS */
 .modal {
 	display: none;
-	position: absolute;
-	z-index: 1;
-	left: 24.2%;
+	position: fixed;
+	z-index: 1000;
+	left: 0;
 	top: 0;
-	width: 50%;
+	width: 100%;
 	height: 100%;
-	/* background-color: rgba(0, 0, 0, 0.5); */
-	justify-content: center;
-	align-items: center;
+	overflow: auto;
+	background-color: rgba(0, 0, 0, 0.4); /* Black background with opacity */
 }
 
 .modal-content {
-	background-color: rgb(240, 240, 240);
-	padding: 50px;
+	background-color: #fefefe;
+	margin: 10% auto;
+	padding: 20px;
+	border: 1px solid #888;
 	border-radius: 10px;
-	text-align: center;
-	font-weight: bold;
+	width: 80%; 
+	max-width: 600px;
 }
 
-#closeModalBtn {
-	background-color: #4CAF50;
-	color: white;
-	padding: 10px 20px;
-	border: none;
-	border-radius: 5px;
+.modal-content h2{
+	text-align: center;
+	padding-top: 30px;
+	padding-bottom: 20px;
+}
+
+.modal-content button{
+    background-color: #04AA6D;
+    color: white;
+    padding: 5px 20px;
+    margin: 10px 38%;
+    border: none;
+    cursor: pointer;
+    width: 20%;
+	border-radius: 10px;
+}
+
+.close {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	color: #0c0c0c;
+	font-size: 28px;
+	font-weight: bold;
 	cursor: pointer;
 }
 
+.close:hover {
+	opacity: 1;
+}
+  
+.close:hover, .close:focus {
+	color: black;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+/*CREATE DOCUMENTS MODAL 'SUBMIT'*/
+.modal .modal-content p{
+	text-align: center;
+	padding-top: 30px;
+	padding-bottom: 20px;
+}
+
+.form-control {
+	z-index: 1050; /* Higher value to make it appear on top */
+}
+
+/* Button styles */
+.submit-btn, .forward-btn, .cancel-btn {
+	background-color: #007bff;
+	color: white;
+	padding: 10px 60px;
+	border: none;
+	border-radius: 30px;
+	cursor: pointer;
+	font-size: 16px;
+	text-align: center;
+	font-weight: 500;
+	margin-top: 10px; /* Add margin to separate buttons */
+}
+
+        
+.submit-btn:hover, .forward-btn:hover, .cancel-btn:hover {
+	background-color: #0056b3;
+}
+
+/* General Button Styling */
+.btn {
+	margin: 10px;
+}
+
+/* Comment Box */
+textarea {
+	width: 100%; /* Make the textarea take full width */
+	height: 200px; /* Increase the height for a larger comment box */
+	padding: 10px;
+	border-radius: 5px;
+	border: 1px solid #ccc;
+	font-size: 16px;
+	resize: vertical; /* Allow vertical resizing */
+	margin-bottom: 20px;
+}
+
+/* Office Dropdown */
+select {
+	width: 100%; /* Full width dropdown */
+	padding: 10px;
+	border-radius: 5px;
+	border: 1px solid #ccc;
+	font-size: 16px;
+	margin-bottom: 20px;
+}
+
+/* Forward and Complete Buttons in the Action Column */
+.action-buttons a {
+	padding: 8px 12px;
+	text-decoration: none;
+	color: white;
+	border-radius: 4px;
+	margin-right: 5px;
+}

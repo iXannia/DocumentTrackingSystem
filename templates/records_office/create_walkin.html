@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Boxicons -->
+    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../static/dashboard.css">
+    <title>Records Office Dashboard</title>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <section id="sidebar">
+        <a href="{{ url_for('_records_dashboard') }}" class="brand">
+            <i class='bx bxs-smile'></i>
+            <span class="text">DepEd Cebu City - Records Office</span>
+        </a>
+        <ul class="side-menu top">
+            <li>
+                <a href="{{ url_for('_records_dashboard') }}">
+                    <i class='bx bxs-dashboard'></i>
+                    <span class="text">Create Documents</span>
+                </a>
+            </li>
+            <li class="active">
+                <a href="create_walkin" aria-label="Walkin Document">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Create Walk-in Documents</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('receive_documents') }}">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Documents for Receive</span>
+                </a>
+            </li>
+            <li>
+                <a href="encoded_documents" aria-label="Encoded Document">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">My Documents</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Document for Release</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('track_records_documents') }}">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Track Documents</span>
+                </a>
+            </li>
+        </ul>
+        <ul class="side-menu">
+            <li>
+                <a href="{{ url_for('logout') }}" class="logout">
+                    <i class='bx bxs-log-out-circle'></i>
+                    <span class="text">Logout</span>
+                </a>
+            </li>
+        </ul>
+    </section>
+    <!-- SIDEBAR -->
+
+    <!-- CONTENT -->
+    <section id="content">
+        <!-- NAVBAR -->
+        <nav>
+            <form action="#"></form>
+            <a href="#" class="profile">
+                <img src="img/people.png" alt="User Profile">
+            </a>
+        </nav>
+        <!-- NAVBAR -->
+
+        <!-- MAIN -->
+        <main>
+            <div class="head-title">
+                <div class="left">
+                    <h1>Create Documents for Walkin!</h1>
+                    <ul class="breadcrumb">
+                        <li>
+                            <a href="{{ url_for('_records_dashboard') }}">Dashboard</a>
+                        </li>
+                        <li><i class='bx bx-chevron-right'></i></li>
+                        <li>
+                            <a class="active" href="{{ url_for('create_walkin') }}">Create Walk-in Documents</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Form to Add New Document -->
+            <form method="POST" action="{{ url_for('create_walkin') }}">
+                <label for="firstname">First Name:</label>
+                <input type="text" name="firstname" required>
+                
+                <label for="lastname">Last Name:</label>
+                <input type="text" name="lastname" required>
+                
+                <label for="id_number">Phone Number:</label>
+                <input type="text" name="id_number" required>
+                
+                <label for="email">Email:</label>
+                <input type="email" name="email" required>
+                
+                <label for="organization">Organization:</label>
+                <input type="text" name="organization" required>
+                
+                <label for="doc_type">Document Type:</label>
+                <select name="doc_type" required>
+                    <option value="" disabled selected>Select Document Type</option>  <!-- Placeholder -->
+                    {% for doc_type in document_types%}
+                        <option value="{{ doc_type.DocTypeID }}">{{ doc_type.DocTypeName }}</option>
+                    {% endfor %}
+                </select>
+                
+                <label for="doc_details">Document Details:</label>
+                <textarea name="doc_details" required></textarea>
+                
+                <label for="doc_purpose">Document Purpose:</label>
+                <textarea name="doc_purpose" required></textarea>
+                
+                <button type="submit">Submit</button>
+            </form>
+            
+            <!-- Modal for displaying success message -->
+            <div id="successModal" class="modal">
+                <div class="modal-content">
+                    <p>Document successfully created!</p>
+                    <button id="closeModalBtn">OK</button>
+                </div>
+            </div>
+
+            <!-- Custom Script for AJAX Form Submission -->
+            <script>
+                document.getElementById('addDocumentForm').addEventListener('submit', function (e) {
+                    e.preventDefault();  // Prevent the form from submitting the default way
+
+                    let formData = new FormData(this);
+
+                    fetch('{{ url_for("staff_add_document") }}', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Show the success modal
+                            const modal = document.getElementById('successModal');
+                            modal.style.display = 'flex';
+
+                            // Close modal when clicking "OK"
+                            document.getElementById('closeModalBtn').addEventListener('click', function () {
+                                modal.style.display = 'none';
+                            });
+                        } else if (data.error) {
+                            alert('Error: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                });
+            </script>
+        </main>
+        <!-- MAIN -->
+    </section>
+    <!-- CONTENT -->
+
+    <script src="script.js"></script>
+</body>
+</html>

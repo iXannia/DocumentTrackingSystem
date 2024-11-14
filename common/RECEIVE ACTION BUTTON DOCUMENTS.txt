@@ -1,0 +1,463 @@
+@app.route('/admin_receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def handle_admin_receive_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Update the status of the document to 'Received' and set DateReceived
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = %s, DateReceived = NOW()
+            WHERE DocNo = %s AND OfficeID = %s
+        """, ('Received', doc_no, session.get('office_id')))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Document not found or already received."}), 404
+
+        # 2. Fetch the TrackingNumber for this document
+        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
+        tracking_number_result = cursor.fetchone()
+        tracking_number = tracking_number_result[0] if tracking_number_result else None
+
+        # 3. Insert the transaction into the TRANSACTIONS table
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType, TrackingNumber
+            )
+            VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+        """, (
+            session.get('office_id'),  # Office receiving the document
+            doc_no,                    # Document number being received
+            session.get('user_id'),    # The user performing the action
+            'Received',                # Status of the transaction
+            'Receive',                 # Type of transaction
+            tracking_number            # TrackingNumber associated with this document
+        ))
+
+        conn.commit()
+        return redirect(url_for('admin_documents'))
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+--------------------
+
+
+@app.route('/receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def handle_receive_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Update the status of the document to 'Received' and set DateReceived
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = %s, DateReceived = NOW()
+            WHERE DocNo = %s AND OfficeID = %s
+        """, ('Received', doc_no, session.get('office_id')))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Document not found or already received."}), 404
+
+        # 2. Fetch the TrackingNumber for this document
+        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
+        tracking_number_result = cursor.fetchone()
+        tracking_number = tracking_number_result[0] if tracking_number_result else None
+
+        # 3. Insert the transaction into the TRANSACTIONS table
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType, TrackingNumber
+            )
+            VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+        """, (
+            session.get('office_id'),  # Office receiving the document
+            doc_no,                    # Document number being received
+            session.get('user_id'),    # The user performing the action
+            'Received',                # Status of the transaction
+            'Receive',                 # Type of transaction
+            tracking_number            # TrackingNumber associated with this document
+        ))
+
+        conn.commit()
+        return redirect(url_for('receive_documents'))
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+--------------
+
+@app.route('/budget_receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def handle_budget_receive_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Update the status of the document to 'Received' and set DateReceived
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = %s, DateReceived = NOW()
+            WHERE DocNo = %s AND OfficeID = %s
+        """, ('Received', doc_no, session.get('office_id')))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Document not found or already received."}), 404
+
+        # 2. Fetch the TrackingNumber for this document
+        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
+        tracking_number_result = cursor.fetchone()
+        tracking_number = tracking_number_result[0] if tracking_number_result else None
+
+        # 3. Insert the transaction into the TRANSACTIONS table
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType, TrackingNumber
+            )
+            VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+        """, (
+            session.get('office_id'),  # Office receiving the document
+            doc_no,                    # Document number being received
+            session.get('user_id'),    # The user performing the action
+            'Received',                # Status of the transaction
+            'Receive',                 # Type of transaction
+            tracking_number            # TrackingNumber associated with this document
+        ))
+
+        conn.commit()
+        return redirect(url_for('budget_documents'))
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+------------------
+
+@app.route('/budget_receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def handle_budget_receive_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Update the status of the document to 'Received' and set DateReceived
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = %s, DateReceived = NOW()
+            WHERE DocNo = %s AND OfficeID = %s
+        """, ('Received', doc_no, session.get('office_id')))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Document not found or already received."}), 404
+
+        # 2. Fetch the TrackingNumber for this document
+        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
+        tracking_number_result = cursor.fetchone()
+        tracking_number = tracking_number_result[0] if tracking_number_result else None
+
+        # 3. Insert the transaction into the TRANSACTIONS table
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType, TrackingNumber
+            )
+            VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+        """, (
+            session.get('office_id'),  # Office receiving the document
+            doc_no,                    # Document number being received
+            session.get('user_id'),    # The user performing the action
+            'Received',                # Status of the transaction
+            'Receive',                 # Type of transaction
+            tracking_number            # TrackingNumber associated with this document
+        ))
+
+        conn.commit()
+        return redirect(url_for('budget_documents'))
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+-----------
+
+@app.route('/cashier_receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def handle_cashier_receive_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Update the status of the document to 'Received' and set DateReceived
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = %s, DateReceived = NOW()
+            WHERE DocNo = %s AND OfficeID = %s
+        """, ('Received', doc_no, session.get('office_id')))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Document not found or already received."}), 404
+
+        # 2. Fetch the TrackingNumber for this document
+        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
+        tracking_number_result = cursor.fetchone()
+        tracking_number = tracking_number_result[0] if tracking_number_result else None
+
+        # 3. Insert the transaction into the TRANSACTIONS table
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType, TrackingNumber
+            )
+            VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+        """, (
+            session.get('office_id'),  # Office receiving the document
+            doc_no,                    # Document number being received
+            session.get('user_id'),    # The user performing the action
+            'Received',                # Status of the transaction
+            'Receive',                 # Type of transaction
+            tracking_number            # TrackingNumber associated with this document
+        ))
+
+        conn.commit()
+        return redirect(url_for('cashier_documents'))
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+-------------
+
+@app.route('/hrmu_receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def handle_hrmu_receive_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Update the status of the document to 'Received' and set DateReceived
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = %s, DateReceived = NOW()
+            WHERE DocNo = %s AND OfficeID = %s
+        """, ('Received', doc_no, session.get('office_id')))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Document not found or already received."}), 404
+
+        # 2. Fetch the TrackingNumber for this document
+        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
+        tracking_number_result = cursor.fetchone()
+        tracking_number = tracking_number_result[0] if tracking_number_result else None
+
+        # 3. Insert the transaction into the TRANSACTIONS table
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType, TrackingNumber
+            )
+            VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+        """, (
+            session.get('office_id'),  # Office receiving the document
+            doc_no,                    # Document number being received
+            session.get('user_id'),    # The user performing the action
+            'Received',                # Status of the transaction
+            'Receive',                 # Type of transaction
+            tracking_number            # TrackingNumber associated with this document
+        ))
+
+        conn.commit()
+        return redirect(url_for('hrmu_documents'))
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+------------
+
+@app.route('/ict_receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def handle_ict_receive_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Update the status of the document to 'Received' and set DateReceived
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = %s, DateReceived = NOW()
+            WHERE DocNo = %s AND OfficeID = %s
+        """, ('Received', doc_no, session.get('office_id')))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Document not found or already received."}), 404
+
+        # 2. Fetch the TrackingNumber for this document
+        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
+        tracking_number_result = cursor.fetchone()
+        tracking_number = tracking_number_result[0] if tracking_number_result else None
+
+        # 3. Insert the transaction into the TRANSACTIONS table
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType, TrackingNumber
+            )
+            VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+        """, (
+            session.get('office_id'),  # Office receiving the document
+            doc_no,                    # Document number being received
+            session.get('user_id'),    # The user performing the action
+            'Received',                # Status of the transaction
+            'Receive',                 # Type of transaction
+            tracking_number            # TrackingNumber associated with this document
+        ))
+
+        conn.commit()
+        return redirect(url_for('ict_documents'))
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+-----------
+
+@app.route('/legal_receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def handle_legal_receive_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Update the status of the document to 'Received' and set DateReceived
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = %s, DateReceived = NOW()
+            WHERE DocNo = %s AND OfficeID = %s
+        """, ('Received', doc_no, session.get('office_id')))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Document not found or already received."}), 404
+
+        # 2. Fetch the TrackingNumber for this document
+        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
+        tracking_number_result = cursor.fetchone()
+        tracking_number = tracking_number_result[0] if tracking_number_result else None
+
+        # 3. Insert the transaction into the TRANSACTIONS table
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType, TrackingNumber
+            )
+            VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+        """, (
+            session.get('office_id'),  # Office receiving the document
+            doc_no,                    # Document number being received
+            session.get('user_id'),    # The user performing the action
+            'Received',                # Status of the transaction
+            'Receive',                 # Type of transaction
+            tracking_number            # TrackingNumber associated with this document
+        ))
+
+        conn.commit()
+        return redirect(url_for('legal_documents'))
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+----------
+
+@app.route('/supply_receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def handle_supply_receive_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Update the status of the document to 'Received' and set DateReceived
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = %s, DateReceived = NOW()
+            WHERE DocNo = %s AND OfficeID = %s
+        """, ('Received', doc_no, session.get('office_id')))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Document not found or already received."}), 404
+
+        # 2. Fetch the TrackingNumber for this document
+        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
+        tracking_number_result = cursor.fetchone()
+        tracking_number = tracking_number_result[0] if tracking_number_result else None
+
+        # 3. Insert the transaction into the TRANSACTIONS table
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType, TrackingNumber
+            )
+            VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+        """, (
+            session.get('office_id'),  # Office receiving the document
+            doc_no,                    # Document number being received
+            session.get('user_id'),    # The user performing the action
+            'Received',                # Status of the transaction
+            'Receive',                 # Type of transaction
+            tracking_number            # TrackingNumber associated with this document
+        ))
+
+        conn.commit()
+        return redirect(url_for('supply_documents'))
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+----------
+

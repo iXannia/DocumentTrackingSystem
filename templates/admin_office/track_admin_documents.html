@@ -18,39 +18,27 @@
         </a>
         <ul class="side-menu top">
             <li>
-                <a href="{{ url_for('_admin_dashboard') }}" aria-label="Dashboard Home">
+                <a href="{{ url_for('_admin_dashboard') }}">
                     <i class='bx bxs-dashboard'></i>
-                    <span class="text">Dashboard</span>
-                </a>
-            </li>
-            <li  class="active">
-                <a href="admin_encoded" aria-label="Encoded Document">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Encoded Documents</span>
+                    <span class="text">Create Documents</span>
                 </a>
             </li>
             <li>
-                <a href="admin_documents" aria-label="Document for Receive">
+                <a href="{{ url_for('admin_documents') }}">
                     <i class='bx bxs-file'></i>
                     <span class="text">Document for Receive</span>
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="{{ url_for('admin_encoded') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Document for Action</span>
-                </a>
-            </li>
-            <li>
-                <a href="#">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Document for Release</span>
+                    <span class="text">My Documents</span>
                 </a>
             </li>
             <li class="active">
                 <a href="{{ url_for('track_admin_documents') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">History</span>
+                    <span class="text">Track Documents</span>
                 </a>
             </li>
         </ul>
@@ -121,7 +109,7 @@
                                 <td>{{ document.DocPurpose }}</td>
                                 <td>{{ document.DateEncoded }}</td>
                                 <td>{{ document.DateReceived }}</td>
-                                <td>{{ document.Status }}</td>
+                                <td><span class="status {{ document.Status|lower }}">{{ document.Status }}</span></td>
                             </tr>
                             {% else %}
                             <tr>

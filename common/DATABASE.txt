@@ -1,0 +1,141 @@
+-- Create the database (if it does not already exist)
+CREATE DATABASE IF NOT EXISTS DocumentTracking;
+USE DocumentTracking;
+
+-- Create the ROLES table
+CREATE TABLE ROLES (
+    RoleID INT AUTO_INCREMENT PRIMARY KEY,
+    Rolename VARCHAR(255) UNIQUE NOT NULL
+);
+
+-- Create the SCHOOLS table
+CREATE TABLE SCHOOLS (
+    SchoolID INT AUTO_INCREMENT PRIMARY KEY,
+    SchoolName VARCHAR(255) UNIQUE NOT NULL
+);
+
+-- Create the OFFICES table
+CREATE TABLE OFFICES (
+    OfficeID INT AUTO_INCREMENT PRIMARY KEY,
+    OfficeName VARCHAR(255) UNIQUE NOT NULL
+);
+
+-- Create the DOCUMENT_TYPE table
+CREATE TABLE DOCUMENT_TYPE (
+    DocTypeID INT AUTO_INCREMENT PRIMARY KEY,
+    DocTypeName VARCHAR(255) UNIQUE NOT NULL
+);
+
+-- Create the USERS table
+CREATE TABLE USERS (
+    UserID INT AUTO_INCREMENT PRIMARY KEY,
+    RoleID INT,
+    SchoolID INT,
+    Firstname VARCHAR(255),
+    Middlename VARCHAR(255),
+    Lastname VARCHAR(255),
+    IDNumber VARCHAR(255) UNIQUE,
+    Email VARCHAR(255) UNIQUE,
+    Password VARCHAR(255),
+    FOREIGN KEY (RoleID) REFERENCES ROLES(RoleID),
+    FOREIGN KEY (SchoolID) REFERENCES SCHOOLS(SchoolID)
+);
+
+-- Create the STAFF table
+CREATE TABLE STAFF (
+    UserID INT PRIMARY KEY,
+    OfficeID INT,
+    FOREIGN KEY (UserID) REFERENCES USERS(UserID),
+    FOREIGN KEY (OfficeID) REFERENCES OFFICES(OfficeID)
+);
+
+-- Create the ADMIN table
+CREATE TABLE ADMIN (
+	UserID INT PRIMARY KEY,
+	AdminSpecificField VARCHAR(255),
+	FOREIGN KEY (UserID) REFERENCES USERS(UserID)
+);
+
+-- Create the DOCUMENTS table with a TrackingNumber
+CREATE TABLE DOCUMENTS (
+    CREATE TABLE DOCUMENTS (
+    DocNo INT AUTO_INCREMENT PRIMARY KEY,
+    TrackingNumber VARCHAR(255) UNIQUE NOT NULL, -- New field for tracking number
+    UserID INT,
+    DocTypeID INT,
+    SchoolID INT NULL, -- Allows NULL for documents not associated with a school
+    OfficeID INT, -- Added based on your original context
+    DocDetails TEXT,
+    DocPurpose VARCHAR(255),
+    DateEncoded DATETIME,
+    DateReceived DATETIME NULL, -- Allows NULL for documents that might not have a received date yet
+    Status VARCHAR(50),
+    FOREIGN KEY (UserID) REFERENCES USERS(UserID),
+    FOREIGN KEY (DocTypeID) REFERENCES DOCUMENT_TYPE(DocTypeID),
+    FOREIGN KEY (SchoolID) REFERENCES SCHOOLS(SchoolID),
+    FOREIGN KEY (OfficeID) REFERENCES OFFICES(OfficeID) -- Assuming you have an OFFICES table
+);
+	
+
+CREATE TABLE TRANSACTIONS (
+    TransactionID INT AUTO_INCREMENT PRIMARY KEY,
+    OfficeID INT,  -- The current office receiving or processing the document
+    ForwardedToOfficeID INT NULL,  -- The office to which the document was forwarded (if applicable)
+    DocNo INT,  -- Document reference
+    UserID INT,  -- The user performing the action in the current office
+    ReceivedDate DATETIME NULL,  -- Date and time the document was received
+    ProcessDate DATETIME NULL,   -- Date and time the document was processed (if applicable)
+    ForwardDate DATETIME NULL,   -- Date and time the document was forwarded (if applicable)
+    CompletedDate DATETIME NULL, -- Date and time the document was completed (if applicable)
+    Status VARCHAR(50),  -- Status of the transaction (e.g., "Received", "Processed", "Forwarded")
+    TransactionType VARCHAR(50),  -- Type of transaction (e.g., "Receive", "Forward", "Process")
+    Comments TEXT,  -- Additional notes or comments
+    TrackingNumber VARCHAR(255),  -- New field for tracking number
+
+    FOREIGN KEY (OfficeID) REFERENCES OFFICES(OfficeID),
+    FOREIGN KEY (ForwardedToOfficeID) REFERENCES OFFICES(OfficeID),
+    FOREIGN KEY (DocNo) REFERENCES DOCUMENTS(DocNo),
+);
+
+
+ALTER TABLE TRANSACTIONS
+ADD COLUMN ForwardedToOfficeID INT NULL,
+ADD FOREIGN KEY (ForwardedToOfficeID) REFERENCES OFFICES(OfficeID);
+
+
+
+-- Example INSERT Statements
+
+-- Insert roles
+INSERT INTO ROLES (Rolename) VALUES
+('Admin'),
+('User'),
+('Staff');
+
+
+INSERT INTO OFFICES (OfficeName) VALUES
+('SDO - OSDS - Accounting I'),
+('SDO - OSDS - Accounting II Validators'),
+('SDO - OSDS - Administrative Office'),
+('SDO - OSDS - BAC'),
+('SDO - OSDS - Legal'),
+('SDO - OSDS - ICT');
+
+
+INSERT INTO SCHOOLS (SchoolName) VALUES
+('Abellana National School'),
+('Alaska Night High School'),
+('Babag Integrated School'),
+('Bonbon Elementary School'),
+('Busay Elementary School');
+
+
+INSERT INTO DOCUMENT_TYPE (DocTypeName) VALUES
+('AIP'),
+('Advisory'),
+('Application Letter'),
+('Authority to Travel'),
+('Division Clearance'),
+('Job Order'),
+('Leave Application'),
+('Legal Documents');

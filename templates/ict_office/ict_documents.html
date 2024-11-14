@@ -20,31 +20,19 @@
             <li>
                 <a href="{{ url_for('_ict_dashboard') }}">
                     <i class='bx bxs-dashboard'></i>
-                    <span class="text">Dashboard</span>
+                    <span class="text">Create Documents</span>
                 </a>
             </li>
-            <li>
-                <a href="ict_encoded" aria-label="Encoded Document">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Encoded Documents</span>
-                </a>
-            </li>
-            <li  class="active">
-                <a href="ict_documents" aria-label="Document for Receive">
+            <li class="active">
+                <a href="{{ url_for('ict_documents') }}" aria-label="Document for Receive">
                     <i class='bx bxs-file'></i>
                     <span class="text">Document for Receive</span>
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="{{ url_for('ict_encoded') }}" aria-label="Encoded Document">
                     <i class='bx bxs-file'></i>
                     <span class="text">My Documents</span>
-                </a>
-            </li>
-            <li>
-                <a href="#">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Document for Release</span>
                 </a>
             </li>
             <li>
@@ -57,15 +45,6 @@
         <ul class="side-menu">
             <li>
                 <a href="{{ url_for('logout') }}" class="logout">
-                    <i class='bx bxs-log-out-circle'></i>
-                    <span class="text">Logout</span>
-                </a>
-            </li>
-        </ul>
-    </section>
-        <ul class="side-menu">
-            <li>
-                <a href="login" class="logout" aria-label="Logout">
                     <i class='bx bxs-log-out-circle'></i>
                     <span class="text">Logout</span>
                 </a>
@@ -120,6 +99,7 @@
                                 <th>Date Encoded</th>
                                 <th>Date Received</th>
                                 <th>Status</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -144,6 +124,14 @@
                                     <td>{{ document.DateEncoded }}</td>
                                     <td>{{ document.DateReceived }}</td>
                                     <td><span class="status {{ document.Status|lower }}">{{ document.Status }}</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <form action="{{ url_for('handle_ict_receive_document', doc_no=document.DocNo) }}" method="POST">
+                                                <input type="hidden" name="tracking_number" value="{{ document.TrackingNumber }}">
+                                                <button type="submit" class="receive" onclick="return confirm('Are you sure you want to receive this document?');">Receive</button>
+                                            </form>
+                                        </div>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             {% else %}

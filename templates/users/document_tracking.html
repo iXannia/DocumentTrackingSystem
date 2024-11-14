@@ -97,7 +97,6 @@
                                 <th>Purpose</th>
                                 <th>School/Office</th>
                                 <th>Date Encoded</th>
-                                <th>Date Received</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
@@ -113,20 +112,29 @@
                                     <td>{{ document.DocPurpose }}</td>
                                     <td>{{ document.SchoolName }}</td>
                                     <td>{{ document.DateEncoded }}</td>
-                                    <td>{{ document.DateReceived }}</td>
                                     <td><span class="status {{ document.Status|lower }}">{{ document.Status }}</span></td>
                                     <td>
                                         <div class="action-buttons">
-                                            {% if document.Status != 'received' %}
-                                            <form action="{{ url_for('delete_document', doc_no=document.TrackingNumber) }}" method="POST" style="display:inline;">
-                                                <button type="submit" class="delete">Delete</button>
-                                            </form>
+                                            <!-- View Button triggers the view modal -->
+                                            <a href="javascript:void(0)" class="view" onclick="openViewModal('{{ document.TrackingNumber }}')">View</a>
+
+                                            <!-- Disable Edit if document is 'Completed' or 'Received' -->
+                                            {% if document.Status == 'Complete' or document.Status == 'Received' %}
+                                                <button class="edit" disabled>Edit</button>
+                                            {% else %}
+                                                <button class="edit" onclick="openModal('{{ document.TrackingNumber }}', '{{ document.DocTypeID }}', '{{ document.DocDetails }}', '{{ document.DocPurpose }}')">Edit</button>
+                                            {% endif %}
+
+                                            <!-- Disable Delete if document is 'Completed' or 'Received' -->
+                                            {% if document.Status != 'Complete' and document.Status != 'Received' %}
+                                                <form action="{{ url_for('delete_document', doc_no=document.TrackingNumber) }}" method="POST" style="display:inline;">
+                                                    <button type="submit" class="delete">Delete</button>
+                                                </form>
                                             {% else %}
                                                 <button class="delete" disabled>Delete</button>
-                                            {% endif %}     
-                                        </div>                               
+                                            {% endif %}
+                                        </div>
                                     </td>
-                                    
                                 </tr>
                                 {% endfor %}
                             {% else %}
@@ -135,7 +143,7 @@
                                 </tr>
                             {% endif %}
                         </tbody>
-                    </table>                    
+                    </table>
                 </div>
             </div>
         </main>
@@ -143,6 +151,89 @@
     </section>
     <!-- CONTENT -->
 
-    <script src="../static/script.js"></script>
+    <!-- The Modal for Editing -->
+    {% for document in documents %}
+    <div id="editModal_{{ document.TrackingNumber }}" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Edit Document</h2>
+            <form action="{{ url_for('edit_document', doc_no=document.TrackingNumber) }}" method="POST" id="editForm_{{ document.TrackingNumber }}">
+                <label for="doctype">Document Type:</label>
+                <select name="doctype" id="doctype_{{ document.TrackingNumber }}" required aria-label="doctype">
+                    <option value="">Select Document Type</option>
+                    {% for doctype in document_types %}
+                        <option value="{{ doctype.DocTypeID }}" {% if doctype.DocTypeID == document.DocTypeID %}selected{% endif %}>{{ doctype.DocTypeName }}</option>
+                    {% endfor %}
+                </select>
+
+                <label for="doc_details">Document Details:</label>
+                <input type="text" id="doc_details_{{ document.TrackingNumber }}" name="doc_details" value="{{ document.DocDetails }}" required>
+
+                <label for="doc_purpose">Document Purpose:</label>
+                <input type="text" id="doc_purpose_{{ document.TrackingNumber }}" name="doc_purpose" value="{{ document.DocPurpose }}" required>
+
+                <button type="submit">Save Changes</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- The Modal for Viewing -->
+    {% for document in documents %}
+    <div id="viewModal_{{ document.TrackingNumber }}" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeViewModal()">&times;</span>
+            <h2>View Document Tracking</h2>
+            <div class="view-details">
+                <p><strong>Tracking Number:</strong> {{ document.TrackingNumber }}</p>
+                <p><strong>Document Type:</strong> {{ document.DocTypeName }}</p>
+                <p><strong>Details:</strong> {{ document.DocDetails }}</p>
+                <p><strong>Purpose:</strong> {{ document.DocPurpose }}</p>
+                <p><strong>Status:</strong> {{ document.Status }}</p>
+                <p><strong>Date Encoded:</strong> {{ document.DateEncoded }}</p>
+                <p><strong>Date Received:</strong> {{ document.DateReceived }}</p>
+                <p><strong>Processed At:</strong> {{ document.SchoolName }}</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Script for Modal -->
+    <script>
+        function openModal(trackingNumber, docTypeID, docDetails, docPurpose) {
+            document.getElementById('editForm_' + trackingNumber).action = "{{ url_for('edit_document', doc_no='') }}" + trackingNumber;
+            document.getElementById('doctype_' + trackingNumber).value = docTypeID;
+            document.getElementById('doc_details_' + trackingNumber).value = docDetails;
+            document.getElementById('doc_purpose_' + trackingNumber).value = docPurpose;
+            document.getElementById('editModal_' + trackingNumber).style.display = "block";
+        }
+
+        function closeModal() {
+            let modals = document.getElementsByClassName('modal');
+            for (let i = 0; i < modals.length; i++) {
+                modals[i].style.display = "none";
+            }
+        }
+
+        function openViewModal(trackingNumber) {
+            document.getElementById('viewModal_' + trackingNumber).style.display = "block";
+        }
+
+        function closeViewModal() {
+            let modals = document.getElementsByClassName('modal');
+            for (let i = 0; i < modals.length; i++) {
+                modals[i].style.display = "none";
+            }
+        }
+
+        window.onclick = function(event) {
+            let modals = document.getElementsByClassName('modal');
+            for (let i = 0; i < modals.length; i++) {
+                if (event.target == modals[i]) {
+                    modals[i].style.display = "none";
+                }
+            }
+        }
+    </script>
 </body>
 </html>

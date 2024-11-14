@@ -20,13 +20,13 @@
             <li>
                 <a href="{{ url_for('_budget_dashboard') }}">
                     <i class='bx bxs-dashboard'></i>
-                    <span class="text">Dashboard</span>
+                    <span class="text">Create Documents</span>
                 </a>
             </li>
             <li class="active">
                 <a href="{{ url_for('budget_documents') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Document for Receive</span>
+                    <span class="text">Documents for Receive</span>
                 </a>
             </li>
             <li>
@@ -68,14 +68,14 @@
         <main>
             <div class="head-title">
                 <div class="left">
-                    <h1>All Documents</h1>
+                    <h1>Documents for Receive</h1>
                     <ul class="breadcrumb">
                         <li>
                             <a class="active" href="{{ url_for('_budget_dashboard') }}">Dashboard</a>
                         </li>
                         <li><i class='bx bx-chevron-right'></i></li>
                         <li>
-                            <a class="active" href="{{ url_for('_budget_dashboard') }}">Received Documents</a>
+                            <a class="active" href="{{ url_for('budget_documents') }}">Received Documents</a>
                         </li>
                     </ul>
                 </div>
@@ -98,6 +98,8 @@
                                 <th>Date Encoded</th>
                                 <th>Date Received</th>
                                 <th>Status</th>
+                                <th>Forwarded To Office</th>
+                                <th>Comments</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -122,14 +124,28 @@
                                     <td>{{ document.DateEncoded }}</td>
                                     <td>{{ document.DateReceived }}</td>
                                     <td><span class="status {{ document.Status|lower }}">{{ document.Status }}</span></td>
+                                    <td>
+                                        {% if document.ForwardedToOfficeID %}
+                                            {{ document.ForwardedToOfficeID }}  <!-- You can join it with the office name if needed -->
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ document.Comments }}</td> <!-- Displaying Comments -->
+                                    <td>
+                                        <form action="{{ url_for('handle_budget_receive_document', doc_no=document.DocNo) }}" method="POST">
+                                            <input type="hidden" name="tracking_number" value="{{ document.TrackingNumber }}">
+                                            <button type="submit" class="receive" onclick="return confirm('Are you sure you want to receive this document?');">Receive</button>
+                                        </form>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             {% else %}
                                 <tr>
-                                    <td colspan="9">No documents found.</td>
+                                    <td colspan="11">No documents found.</td>
                                 </tr>
                             {% endif %}
-                        </tbody>                        
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -138,31 +154,24 @@
             <div class="pagination">
                 {% if total_pages > 1 %}
                     <ul>
-                        <!-- Previous button -->
                         <li class="{% if current_page == 1 %}disabled{% endif %}">
                             <a href="?page={{ current_page - 1 }}">Prev</a>
                         </li>
 
-                        <!-- Page numbers -->
                         {% for p in range(1, total_pages + 1) %}
                             <li class="{% if current_page == p %}active{% endif %}">
                                 <a href="?page={{ p }}">{{ p }}</a>
                             </li>
                         {% endfor %}
 
-                        <!-- Next button -->
                         <li class="{% if current_page == total_pages %}disabled{% endif %}">
                             <a href="?page={{ current_page + 1 }}">Next</a>
                         </li>
                     </ul>
                 {% endif %}
             </div>
-            <!-- Pagination End -->
-
         </main>
-        <!-- MAIN -->
     </section>
-    <!-- CONTENT -->
 
     <script src="../static/script.js"></script>
 </body>

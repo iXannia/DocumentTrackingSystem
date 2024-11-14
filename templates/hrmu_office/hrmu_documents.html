@@ -20,37 +20,25 @@
             <li>
                 <a href="{{ url_for('_hrmu_dashboard') }}">
                     <i class='bx bxs-dashboard'></i>
-                    <span class="text">Dashboard</span>
+                    <span class="text">Create Documents</span>
                 </a>
             </li>
-            <li>
-                <a href="hrmu_encoded" aria-label="Encoded Document">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Encoded Documents</span>
-                </a>
-            </li>
-            <li  class="active">
-                <a href="hrmu_documents" aria-label="Document for Receive">
+            <li class="active">
+                <a href="{{ url_for('hrmu_documents') }}" aria-label="Document for Receive">
                     <i class='bx bxs-file'></i>
                     <span class="text">Document for Receive</span>
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="{{ url_for('hrmu_encoded') }}" aria-label="Encoded Document">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Document for Action</span>
-                </a>
-            </li>
-            <li>
-                <a href="#">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Document for Release</span>
+                    <span class="text">My Documents</span>
                 </a>
             </li>
             <li>
                 <a href="{{ url_for('track_hrmu_documents') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">History</span>
+                    <span class="text">Track Documents</span>
                 </a>
             </li>
         </ul>
@@ -120,6 +108,7 @@
                                 <th>Date Encoded</th>
                                 <th>Date Received</th>
                                 <th>Status</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -144,6 +133,14 @@
                                     <td>{{ document.DateEncoded }}</td>
                                     <td>{{ document.DateReceived }}</td>
                                     <td><span class="status {{ document.Status|lower }}">{{ document.Status }}</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <form action="{{ url_for('handle_hrmu_receive_document', doc_no=document.DocNo) }}" method="POST">
+                                                <input type="hidden" name="tracking_number" value="{{ document.TrackingNumber }}">
+                                                <button type="submit" class="receive" onclick="return confirm('Are you sure you want to receive this document?');">Receive</button>
+                                            </form>
+                                        </div>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             {% else %}

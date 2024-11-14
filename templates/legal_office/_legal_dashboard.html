@@ -17,37 +17,25 @@
             <li class="active">
                 <a href="{{ url_for('_legal_dashboard') }}">
                     <i class='bx bxs-dashboard'></i>
-                    <span class="text">Dashboard</span>
+                    <span class="text">Create Documents</span>
                 </a>
             </li>
             <li>
-                <a href="legal_encoded" aria-label="Encoded Document">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Encoded Documents</span>
-                </a>
-            </li>
-            <li>
-                <a href="legal_documents" aria-label="Document for Receive">
+                <a href="{{ url_for('legal_documents') }}" aria-label="Document for Receive">
                     <i class='bx bxs-file'></i>
                     <span class="text">Document for Receive</span>
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="{{ url_for('legal_encoded') }}" aria-label="Encoded Document">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Document for Action</span>
-                </a>
-            </li>
-            <li>
-                <a href="#">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Document for Release</span>
+                    <span class="text">My Documents</span>
                 </a>
             </li>
             <li>
                 <a href="{{ url_for('track_legal_documents') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">History</span>
+                    <span class="text">Track Documents</span>
                 </a>
             </li>
         </ul>
@@ -72,7 +60,7 @@
         <main>
             <div class="head-title">
                 <div class="left">
-                    <h1>[LEGAL OFFICE] Hi! {{ user.Firstname }} {{ user.Middlename[0] if user.Middlename else '' }}. {{ user.Lastname }}</h1>
+                    <h1>Welcome to {{ user.Firstname|capitalize }} Office!</h1>
                     <ul class="breadcrumb">
                         <li>
                             <a href="{{ url_for('_legal_dashboard') }}">Dashboard</a>
@@ -107,15 +95,6 @@
             
                             <label for="docpurpose">Document Purpose:</label>
                             <input type="text" name="docpurpose" placeholder="Enter document purpose" required>
-            
-                            <!-- Office Dropdown (Destination) -->
-                            <label for="office">Send To Office:</label>
-                            <select name="office" id="office" required aria-label="Office">
-                                <option value="">Select Office</option>
-                                {% for office in offices %}
-                                    <option value="{{ office[0] }}">{{ office[1] }}</option>
-                                {% endfor %}
-                            </select>
             
                             <button type="submit">Submit</button>
                         </div>

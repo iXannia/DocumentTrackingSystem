@@ -17,40 +17,28 @@
             <span class="text">DepEd Cebu City - Admin Office</span>
         </a>
         <ul class="side-menu top">
-            <li class="active">
+            <li>
                 <a href="{{ url_for('_admin_dashboard') }}">
                     <i class='bx bxs-dashboard'></i>
-                    <span class="text">Dashboard</span>
-                </a>
-            </li>
-            <li>
-                <a href="#" aria-label="Encoded Document">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Encoded Documents</span>
+                    <span class="text">Create Documents</span>
                 </a>
             </li>
             <li class="active">
-                <a href="admin_documents" aria-label="Document for Receive">
+                <a href="{{ url_for('admin_documents') }}">
                     <i class='bx bxs-file'></i>
                     <span class="text">Document for Receive</span>
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="{{ url_for('admin_encoded') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Document for Action</span>
-                </a>
-            </li>
-            <li>
-                <a href="#">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Document for Release</span>
+                    <span class="text">My Documents</span>
                 </a>
             </li>
             <li>
                 <a href="{{ url_for('track_admin_documents') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">History</span>
+                    <span class="text">Track Documents</span>
                 </a>
             </li>
         </ul>
@@ -83,11 +71,11 @@
                     <h1>All Documents</h1>
                     <ul class="breadcrumb">
                         <li>
-                            <a class="active" href="{{ url_for('_budget_dashboard') }}">Dashboard</a>
+                            <a class="active" href="{{ url_for('_admin_dashboard') }}">Dashboard</a>
                         </li>
                         <li><i class='bx bx-chevron-right'></i></li>
                         <li>
-                            <a class="active" href="{{ url_for('_budget_dashboard') }}">Received Documents</a>
+                            <a class="active" href="{{ url_for('admin_documents') }}">Received Documents</a>
                         </li>
                     </ul>
                 </div>
@@ -110,6 +98,7 @@
                                 <th>Date Encoded</th>
                                 <th>Date Received</th>
                                 <th>Status</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -133,6 +122,14 @@
                                     <td>{{ document.DateEncoded }}</td>
                                     <td>{{ document.DateReceived }}</td>
                                     <td><span class="status {{ document.Status|lower }}">{{ document.Status }}</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <form action="{{ url_for('handle_admin_receive_document', doc_no=document.DocNo) }}" method="POST">
+                                                <input type="hidden" name="tracking_number" value="{{ document.TrackingNumber }}">
+                                                <button type="submit" class="receive" onclick="return confirm('Are you sure you want to receive this document?');">Receive</button>
+                                            </form>
+                                        </div>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             {% else %}

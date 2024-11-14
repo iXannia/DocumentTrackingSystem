@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Boxicons -->
+    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../static/dashboard.css">
+    <title>RECORDS Dashboard</title>
+    <style>
+        /* Modal Container */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4); /* Black background with opacity */
+        }
+        
+        /* Modal Content Box */
+        .modal-content {
+            background-color: #fff;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 50%;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .form-control {
+            z-index: 1050; /* Higher value to make it appear on top */
+        }
+
+        /* Close Button (X) */
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #0c0c0c;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover, .close:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Button styles */
+        .submit-btn, .forward-btn, .cancel-btn {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px; /* Add margin to separate buttons */
+        }
+
+        .submit-btn:hover, .forward-btn:hover, .cancel-btn:hover {
+            background-color: #0056b3;
+        }
+
+        /* General Button Styling */
+        .btn {
+            margin: 10px;
+        }
+
+        /* Comment Box */
+        textarea {
+            width: 100%; /* Make the textarea take full width */
+            height: 150px; /* Increase the height for a larger comment box */
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            resize: vertical; /* Allow vertical resizing */
+            margin-bottom: 20px;
+        }
+
+        /* Office Dropdown */
+        select {
+            width: 100%; /* Full width dropdown */
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        
+        /* Forward and Complete Buttons in the Action Column */
+        .action-buttons a {
+            padding: 8px 12px;
+            text-decoration: none;
+            color: white;
+            border-radius: 4px;
+            margin-right: 5px;
+        }
+        
+        /* Forward Button - Green */
+        .action-buttons .forward {
+            background-color: #28a745;
+        }
+        
+        .action-buttons .forward:hover {
+            background-color: #218838;
+        }
+        
+        /* Complete Button - Blue */
+        .action-buttons .complete {
+            background-color: #007bff;
+        }
+        
+        .action-buttons .complete:hover {
+            background-color: #0056b3;
+        }
+
+        /* More Actions Button */
+        .more-actions {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <section id="sidebar">
+        <a href="_records_dashboard" class="brand" aria-label="Home">
+            <i class='bx bxs-smile'></i>
+            <span class="text">DepEd Cebu City - Records Office</span>
+        </a>
+        <ul class="side-menu top">
+            <li>
+                <a href="_records_dashboard" aria-label="Dashboard Home">
+                    <i class='bx bxs-dashboard'></i>
+                    <span class="text">Create Documents</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" aria-label="Walkin Document">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Create Walk-in Documents</span>
+                </a>
+            </li>
+            <li>
+                <a href="receive_documents" aria-label="Track Document">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Documents for Receive</span>
+                </a>
+            </li>
+            <li class="active">
+                <a href="encoded_documents" aria-label="Encoded Document">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">My Documents</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Document for Release</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('track_records_documents') }}">
+                    <i class='bx bxs-file'></i>
+                    <span class="text">Track Documents</span>
+                </a>
+            </li>
+        </ul>
+        <ul class="side-menu">
+            <li>
+                <a href="login" class="logout" aria-label="Logout">
+                    <i class='bx bxs-log-out-circle'></i>
+                    <span class="text">Logout</span>
+                </a>
+            </li>
+        </ul>
+    </section>
+    <!-- SIDEBAR -->
+
+    <!-- CONTENT -->
+    <section id="content">
+        <!-- NAVBAR -->
+        <nav>
+            <form action="#"></form>
+            <a href="#" class="profile">
+                <img src="img/people.png" alt="User Profile">
+            </a>
+        </nav>
+        <!-- NAVBAR -->
+
+        <!-- MAIN -->
+        <main>
+            <div class="head-title">
+                <div class="left">
+                    <h1>All Documents</h1>
+                    <ul class="breadcrumb">
+                        <li>
+                            <a class="active" href="{{ url_for('_records_dashboard') }}">Dashboard</a>
+                        </li>
+                        <li><i class='bx bx-chevron-right'></i></li>
+                        <li>
+                            <a class="active" href="{{ url_for('encoded_documents') }}">Encoded Documents</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="table-data">
+                <div class="order">
+                    <div class="head">
+                        <h3>Documents</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tracking Number</th>
+                                <th>User</th>
+                                <th>Type</th>
+                                <th>Details</th>
+                                <th>Purpose</th>
+                                <th>School/Office</th>
+                                <th>Date Encoded</th>
+                                <th>Date Received</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if documents %}
+                                {% for document in documents %}
+                                <tr>
+                                    <td>{{ document.TrackingNumber }}</td>
+                                    <td>{{ document.Firstname }} {{ document.Lastname }}</td>
+                                    <td>{{ document.DocTypeName }}</td>
+                                    <td>{{ document.DocDetails }}</td>
+                                    <td>{{ document.DocPurpose }}</td>
+                                    <td>{{ document.SchoolOrOffice }}</td> <!-- Display School or Office -->
+                                    <td>{{ document.DateEncoded }}</td>
+                                    <td>{{ document.DateReceived }}</td>
+                                    <td><span class="status {{ document.Status|lower }}">{{ document.Status }}</span></td>
+                                    <td class="action-buttons">
+                                        <a href="#" class="forward" onclick="openForwardModal('{{ document.DocNo }}')">Forward</a>
+                                        <a href="#" class="complete" onclick="openCompleteModal('{{ document.TrackingNumber }}')">Complete</a>
+                                        <button class="more-actions" onclick="openMoreActionsModal('{{ document.TrackingNumber }}', '{{ document.DocTypeID }}', '{{ document.DocDetails }}', '{{ document.DocPurpose }}')">...</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="9">No documents found.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>                        
+                    </table>                    
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                {% if total_pages > 1 %}
+                    <ul>
+                        <!-- Previous button -->
+                        <li class="{% if page == 1 %}disabled{% endif %}">
+                            <a href="{{ url_for('encoded_documents', page=page-1) }}">Previous</a>
+                        </li>
+                        <!-- Page numbers -->
+                        {% for p in range(1, total_pages + 1) %}
+                        <li class="{% if p == page %}active{% endif %}">
+                            <a href="{{ url_for('encoded_documents', page=p) }}">{{ p }}</a>
+                        </li>
+                        {% endfor %}
+                        <!-- Next button -->
+                        <li class="{% if page == total_pages %}disabled{% endif %}">
+                            <a href="{{ url_for('encoded_documents', page=page+1) }}">Next</a>
+                        </li>
+                    </ul>
+                {% endif %}
+            </div>
+        </main>
+        <!-- MAIN -->
+    </section>
+    <!-- CONTENT -->
+
+    <!-- Forward Document Modal -->
+    <div id="forwardModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeForwardModal()">&times;</span>
+            <h2>Forward Document</h2>
+            <form id="forwardForm" action="/forward_document" method="POST">
+                <input type="hidden" name="DocNo" id="forwardDocNo" value="">
+                <label for="officeSelect">Select Office:</label>
+                <select name="office_id" id="officeSelect" required>
+                    <option value="">Select an office</option>
+                    {% for office in offices %}
+                    <option value="{{ office.OfficeID }}">{{ office.OfficeName }}</option>
+                    {% endfor %}
+                </select>
+                <label for="comment">Comments:</label>
+                <textarea id="comment" name="comment" rows="4" required></textarea>
+                <button type="submit" class="submit-btn">Forward Document</button>
+                <button type="button" class="cancel-btn" onclick="closeForwardModal()">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Complete Document Modal -->
+    <div id="completeModal" class="modal">
+        <div class="modal-content">
+        <span class="close" onclick="closeCompleteModal()">&times;</span>
+        <h2>Complete Document</h2>
+            <form id="completeForm" method="POST" action="/complete_document">
+                <input type="hidden" id="completeTrackingNumber" name="tracking_number" required>
+                <textarea id="completeComments" name="comments" placeholder="Add comments..."></textarea>
+                <button type="submit" class="submit-btn">Submit</button>
+                <button type="button" class="cancel-btn" onclick="closeCompleteModal()">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- More Actions Modal -->
+    <div id="moreActionsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeMoreActionsModal()">&times;</span>
+            <h2>More Actions</h2>
+            <div>
+                <h3>Details</h3>
+                <p><strong>Document Type:</strong> <span id="docTypeName"></span></p>
+                <p><strong>Document Details:</strong> <span id="docDetails"></span></p>
+                <p><strong>Document Purpose:</strong> <span id="docPurpose"></span></p>
+                <button class="submit-btn" onclick="editDocument()">Edit</button>
+                <button class="submit-btn" onclick="deleteDocument()">Delete</button>
+                <button type="button" class="cancel-btn" onclick="closeMoreActionsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        /*FORWARD ACTION BUTTON*/
+        // Open Forward Modal
+        function openForwardModal(docNo) {
+            document.getElementById('forwardDocNo').value = docNo; // Set the DocNo in the hidden input
+            document.getElementById('forwardModal').style.display = 'block'; // Show the modal
+        }
+
+        // Close Forward Modal
+        function closeForwardModal() {
+            document.getElementById('forwardModal').style.display = 'none'; // Hide the modal
+        }
+
+        // Close the modal if the user clicks outside of it
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('forwardModal')) {
+                closeForwardModal();
+            }
+        }
+
+        function openCompleteModal(trackingNumber) {
+            document.getElementById("completeTrackingNumber").value = trackingNumber;
+            document.getElementById("completeModal").style.display = "block";
+        }
+
+        function closeCompleteModal() {
+            document.getElementById("completeModal").style.display = "none";
+        }
+
+        /*COMPLETE ACTION BUTTON*/
+        function openCompleteModal(trackingNumber) {
+            document.getElementById("completeTrackingNumber").value = trackingNumber;
+            document.getElementById("completeModal").style.display = "block";
+        }
+
+        function closeCompleteModal() {
+            document.getElementById("completeModal").style.display = "none";
+        }
+
+        // Handle form submission
+        document.getElementById("completeForm").onsubmit = function(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const trackingNumber = document.getElementById("completeTrackingNumber").value.trim();
+            const comments = document.getElementById("completeComments").value;
+
+            // Validate tracking number is provided
+            if (!trackingNumber) {
+                alert('Tracking number is required.');
+                return;
+            }
+
+            // Send AJAX request to complete the document
+            fetch('/complete_document', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'tracking_number': trackingNumber,
+                    'comments': comments
+                }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(errData => {
+                        throw new Error(errData.error || 'Network response was not ok');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert(data.message); // Success message
+
+                // Remove the completed document row from the table
+                const rows = document.querySelectorAll("tbody tr");
+                rows.forEach(row => {
+                    if (row.cells[0].innerText === data.tracking_number) { // Assuming tracking number is in the first cell
+                        row.remove(); // Remove the completed document row
+                    }
+                });
+
+                closeCompleteModal(); // Close the modal
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(error.message || 'An error occurred while completing the document.');
+            });
+        };
+
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.className === 'modal') {
+                closeCompleteModal();
+            }
+        };
+        /*END OF COMPLETE ACTION BUTTON*/
+
+        /*MORE ACTION ACTION BUTTON*/
+        function openMoreActionsModal(trackingNumber, docTypeID, docDetails, docPurpose) {
+            document.getElementById('docTypeName').textContent = docTypeID;
+            document.getElementById('docDetails').textContent = docDetails;
+            document.getElementById('docPurpose').textContent = docPurpose;
+            document.getElementById('moreActionsModal').style.display = 'block';
+        }
+
+        function closeMoreActionsModal() {
+            document.getElementById('moreActionsModal').style.display = 'none';
+        }
+
+        function editDocument() {
+            // Add your edit functionality here
+            alert('Edit functionality not implemented yet.');
+        }
+
+        function deleteDocument() {
+            // Add your delete functionality here
+            alert('Delete functionality not implemented yet.');
+        }
+
+        // Close modal on clicking outside of the modal content
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                closeForwardModal();
+                closeCompleteModal();
+                closeMoreActionsModal();
+            }
+        }
+        /*END OF MORE ACTION ACTION BUTTON*/
+
+        $(document).ready(function() {
+            $("#completeButton").on("click", function() {
+                // Prepare data from input fields
+                const trackingNumber = $("#tracking_number").val();
+                const comments = $("#comments").val();
+
+                // AJAX request
+                $.ajax({
+                    type: "POST",
+                    url: "/complete_document",
+                    data: {
+                        tracking_number: trackingNumber,
+                        comments: comments
+                    },
+                    dataType: "json",  // Expect a JSON response
+                    success: function(response) {
+                        if (response.success) {
+                            alert(response.message);
+                            // Optionally refresh the document list or update the UI
+                            // Example: location.reload();
+                        } else {
+                            alert("Error: " + response.message);
+                        }
+                    },
+                    error: function(jqXHR) {
+                        console.error("Error:", jqXHR.status, jqXHR.responseText);
+                        alert("An error occurred: " + jqXHR.responseText);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+
+
+# COMPLETE ACTION BUTTON
+@app.route('/complete_document', methods=['POST'])
+def complete_document():
+    tracking_number = request.form['tracking_number']
+    comments = request.form.get('comments', '')
+    user_id = get_current_user_id()
+    office_id = get_current_office_id()  # Retrieve the current office's ID
+
+    # Debugging outputs
+    print(f"Office ID: {office_id}")  # Log the office ID
+    print(f"User ID: {user_id}")  # Log the user ID
+    print(f"Tracking Number: {tracking_number}")  # Log the tracking number
+
+    document_status = 'Completed'
+
+    doc_no = get_doc_no_from_tracking_number(tracking_number)
+
+    transaction_date = datetime.now()
+
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute("SELECT * FROM DOCUMENTS WHERE TrackingNumber = %s", (tracking_number,))
+        document = cursor.fetchone()
+        
+        if not document:
+            return jsonify(success=False, message="Document not found."), 404
+
+        # Check if office_id exists in OFFICES
+        cursor.execute("SELECT * FROM OFFICES WHERE OfficeID = %s", (office_id,))
+        if cursor.fetchone() is None:
+            return jsonify(success=False, message="Invalid Office ID."), 400
+
+        # Insert into TRANSACTIONS table
+        cursor.execute("""INSERT INTO TRANSACTIONS (OfficeID, DocNo, UserID, ProcessDate, Status, TransactionType, Comments)
+                          VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                       (office_id, doc_no, user_id, transaction_date, document_status, 'Process', comments))
+
+        cursor.execute("UPDATE DOCUMENTS SET Status = %s WHERE TrackingNumber = %s", (document_status, tracking_number))
+
+        connection.commit()
+        response = {'message': 'This document is completed.', 'tracking_number': tracking_number}
+        return jsonify(response), 200
+
+    except Exception as e:
+        connection.rollback()
+        print(f"Error occurred: {str(e)}")
+        return jsonify(success=False, error=str(e)), 500
+
+    finally:
+        cursor.close()
+        connection.close()
+
+
+COMPLETE WA PA NAAYO

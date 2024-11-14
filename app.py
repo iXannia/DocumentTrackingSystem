@@ -115,7 +115,7 @@ def login():
 
                 # Redirect based on RoleID for admin and users
                 if user['RoleID'] == 1:  # ADMIN
-                    return redirect(url_for('_admin_dashboard'))
+                    return redirect(url_for('_super_admin_dashboard'))
                 elif user['RoleID'] == 2:  # USERS
                     return redirect(url_for('_users_dashboard'))
 
@@ -135,31 +135,87 @@ def login():
     return render_template('login.html')  # Render login page for GET requests
 
 
-#-----ADMIN DASHBOARD-----#
-# @app.route('/_admin_dashboard')
-# @login_required
-# @admin_required
-# @nocache
-# def _admin_dashboard():
-#     conn = None
-#     cursor = None
-#     try:
-#         conn = get_db_connection()
-#         cursor = conn.cursor(dictionary=True)
+#-----SUPER ADMIN DASHBOARD-----#
+@app.route('/_super_admin_dashboard')
+@login_required
+def _super_admin_dashboard():
+    # Ensure the user is a super admin
+    if session.get('role') != 1:  # Assuming role '1' is for super admin
+        return redirect(url_for('index'))  # Redirect unauthorized users
 
-#         cursor.execute("SELECT UserID, Firstname, Lastname, Email, RoleID FROM USERS")
-#         users = cursor.fetchall()
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('logout'))  # Handle case where user ID is not in session
 
-#         return render_template('admin/_admin_dashboard.html', users=users)
+    # Fetch user details
+    user = get_user_by_id(user_id)
 
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
+    conn = None
+    cursor = None
+    offices = []
+    document_type = []  # To hold document types
 
-#     finally:
-#         if cursor:
-#             cursor.close()
-#         if conn:
-#             conn.close()
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Fetch the list of offices from the database (assuming 'OFFICES' table)
+        cursor.execute("SELECT OfficeID, OfficeName FROM OFFICES")
+        offices = cursor.fetchall()
+
+        # Fetch the list of document types (assuming 'DOCUMENT_TYPE' table)
+        cursor.execute("SELECT DocTypeID, DocTypeName FROM DOCUMENT_TYPE")
+        document_type = cursor.fetchall()  # [(DocTypeID1, DocTypeName1), (DocTypeID2, DocTypeName2), ...]
+
+    except Exception as e:
+        print(f"Error fetching data: {e}")
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+    # Pass document types, offices, and user to the template
+    return render_template('super_admin/_super_admin_dashboard.html', user=user, offices=offices, document_type=document_type)
+
+#SUPER ADMIN REGISTRATION:
+@app.route('/register_admin', methods=['GET', 'POST'])
+def register_admin():
+    if request.method == 'POST':
+        firstname = request.form.get('firstname')
+        lastname = request.form.get('lastname')
+        idnumber = request.form.get('idnumber')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        hashed_password = generate_password_hash(password)
+
+        conn = None
+        cursor = None
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            # Insert into USERS table with RoleID = 1 (assuming 1 is ADMIN)
+            insert_query = """
+            INSERT INTO USERS (RoleID, Firstname, Lastname, IDNumber, Email, Password)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(insert_query, (1, firstname, lastname, idnumber, email, hashed_password))
+            conn.commit()
+
+            return redirect(url_for('login'))
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    return render_template('super_admin/register_admin.html')
 
 # (USER REGISTRATION) Endpoint for user registration
 @app.route('/register', methods=['GET', 'POST'])
@@ -227,7 +283,7 @@ def register():
         if conn:
             conn.close()
 
-    return render_template('register.html', schools=schools)
+    return render_template('super_admin/register.html', schools=schools)
 
 
 # STAFF REGISTRATION
@@ -249,7 +305,7 @@ def register_staff():
             conn = get_db_connection()
             cursor = conn.cursor()
 
-            # Insert into USERS table with RoleID = 1 (assuming 1 is STAFF)
+            # Insert into USERS table with RoleID = 3 (assuming 3 is STAFF)
             insert_query = """
             INSERT INTO USERS (RoleID, Firstname, Middlename, Lastname, IDNumber, Email, Password)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -292,8 +348,13 @@ def register_staff():
         if conn:
             conn.close()
 
-    return render_template('register_staff.html', offices=offices)
+    return render_template('super_admin/register_staff.html', offices=offices)
 #-----END OF ADMIN DASHBOARD-----#
+
+#REGISTRATION:
+@app.route('/registration', methods=['GET'])
+def registration():
+    return render_template('super_admin/registration.html')
 
 #-----USERS DASHBOARD-----#
 @app.route('/_users_dashboard')
@@ -351,10 +412,10 @@ def document_tracking():
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
-            
+
             # Insert the new document into the DOCUMENTS table
             cursor.execute("""
-                INSERT INTO DOCUMENTS (UserID, DocTypeID, SchoolID, OfficeID, DocDetails, DocPurpose, DateEncoded, DateReceived, Status)
+                INSERT INTO DOCUMENTS (UserID, DocTypeID, SchoolID, OfficeID, DocDetails, DocPurpose, DateEncoded, Status)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (user_id, doc_type_id, school_id, office_id, doc_details, doc_purpose, date_encoded, date_received, status))
             conn.commit()
@@ -386,10 +447,16 @@ def document_tracking():
     conn = None
     cursor = None
     documents = []
+    document_types = []  # Initialize this list
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
+
+        # Fetch document types for the dropdown
+        cursor.execute("SELECT * FROM DOCUMENT_TYPE")
+        document_types = cursor.fetchall()
+
         cursor.execute("""
             SELECT d.DocNo, d.DocDetails, d.DocPurpose, d.DateEncoded, d.DateReceived, d.Status, d.TrackingNumber,
                    u.Firstname, u.Lastname,
@@ -412,7 +479,7 @@ def document_tracking():
         if conn:
             conn.close()
 
-    return render_template('users/document_tracking.html', documents=documents)
+    return render_template('users/document_tracking.html', documents=documents, document_types=document_types)
 
 # GET USER ID
 def get_user_school_id(user_id):
@@ -489,11 +556,14 @@ def add_document():
             cursor.close()
         if conn:
             conn.close()
-#-----END OF USERS DASHBOARD-----#
+#----- END OF USERS DASHBOARD -----#
 
 
-#----ALL OFFICES DASHBOARDS-----#
-#----- ADMIN OFFICE DASHBOARD-----#
+
+#----- ALL OFFICES DASHBOARDS -----#
+
+#----- ADMIN OFFICE DASHBOARD -----#
+# "CREATE DOCUMENTS" FOR ADMIN DASHBOARD / _admin_dashboard.html
 @app.route('/_admin_dashboard')
 @login_required
 def _admin_dashboard():
@@ -537,6 +607,7 @@ def _admin_dashboard():
     # Pass document types, offices, and user to the template
     return render_template('admin_office/_admin_dashboard.html', user=user, offices=offices, document_type=document_type)
 
+# "DOCUMENT FOR RECEIVE" FOR ADMIN OFFICE / admin_document.html
 @app.route('/admin_documents')
 @login_required
 def admin_documents():
@@ -596,7 +667,247 @@ def admin_documents():
         cursor.close()
         conn.close()
 
-# TRACK ALL DOCUMENTS IN ADMIN OFFICE
+# "MY DOCUMENTS" FOR ADMIN OFFICE /admin_encoded.html
+@app.route('/admin_encoded', methods=['GET'])
+@login_required
+def admin_encoded():
+    # Ensure the user is a staff member
+    if session.get('role') != 3:  # Assuming role '3' is for staff
+        return redirect(url_for('index'))  # Redirect unauthorized users
+
+    page = request.args.get('page', 1, type=int)  # Get the page number from query params
+    per_page = 10  # Documents per page
+    offset = (page - 1) * per_page
+
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('logout'))  # Handle case where user ID is not in session
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # Fetch paginated documents for the user along with document type and school/office details
+        cursor.execute("""
+            SELECT d.TrackingNumber, 
+                   u.Firstname, 
+                   u.Lastname, 
+                   dt.DocTypeName, 
+                   d.DocDetails, 
+                   d.DocPurpose, 
+                   COALESCE(s.SchoolName, o.OfficeName, 'N/A') AS SchoolOrOffice, 
+                   d.DateEncoded, 
+                   d.DateReceived, 
+                   d.Status,
+                   d.OfficeIDToSend
+            FROM DOCUMENTS d
+            JOIN USERS u ON d.UserID = u.UserID
+            JOIN DOCUMENT_TYPE dt ON d.DocTypeID = dt.DocTypeID
+            LEFT JOIN SCHOOLS s ON d.SchoolID = s.SchoolID
+            LEFT JOIN OFFICES o ON d.OfficeIDToSend = o.OfficeID
+            WHERE d.UserID = %s OR d.Status = 'Received'
+            ORDER BY d.DateEncoded DESC
+            LIMIT %s OFFSET %s
+        """, (user_id, per_page, offset))
+
+        documents = cursor.fetchall()
+
+        # Count total documents for the user
+        cursor.execute("""
+            SELECT COUNT(*) 
+            FROM DOCUMENTS 
+            WHERE UserID = %s OR Status = 'Received'
+        """, (user_id,))
+        total_documents = cursor.fetchone()['COUNT(*)']
+        total_pages = (total_documents + per_page - 1) // per_page
+
+        return render_template(
+            'admin_office/admin_encoded.html',
+            documents=documents,
+            current_page=page,
+            total_pages=total_pages  # Ensure total_pages is defined here
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+# "RECEIVE" ACTION BUTTON FOR ADMIN
+@app.route('/admin_receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def handle_admin_receive_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Update the status of the document to 'Received' and set DateReceived
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = %s, DateReceived = NOW()
+            WHERE DocNo = %s AND OfficeID = %s
+        """, ('Received', doc_no, session.get('office_id')))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Document not found or already received."}), 404
+
+        # 2. Fetch the TrackingNumber for this document
+        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
+        tracking_number_result = cursor.fetchone()
+        tracking_number = tracking_number_result[0] if tracking_number_result else None
+
+        # 3. Insert the transaction into the TRANSACTIONS table
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType, TrackingNumber
+            )
+            VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+        """, (
+            session.get('office_id'),  # Office receiving the document
+            doc_no,                    # Document number being received
+            session.get('user_id'),    # The user performing the action
+            'Received',                # Status of the transaction
+            'Receive',                 # Type of transaction
+            tracking_number            # TrackingNumber associated with this document
+        ))
+
+        conn.commit()
+        return redirect(url_for('admin_documents'))
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+# "FORWARD" ACTION BUTTON FOR ADMIN OFFICE
+@app.route('/admin_forward', methods=['POST'])
+def admin_forward():
+    tracking_number = request.form.get('tracking_number')
+    comments = request.form.get('comments')
+    forwarded_to_office_id = request.form.get('forwarded_to_office_id')  # Capture selected office ID
+
+    try:
+        # Connect to the database
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+
+        # Verify that the document exists
+        cursor.execute("SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s", (tracking_number,))
+        document = cursor.fetchone()
+
+        if not document:
+            flash(f'Document with tracking number {tracking_number} does not exist.', 'error')
+            return redirect(url_for('encoded_documents'))
+
+        # Retrieve the document number (DocNo)
+        doc_no = document[0]
+
+        # Update document status to 'Forwarded'
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = 'Forwarded'
+            WHERE TrackingNumber = %s
+        """, (tracking_number,))
+
+        # Insert a new transaction record with dynamic ForwardedToOfficeID
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, ForwardDate, Status, TransactionType, Comments, ForwardedToOfficeID, TrackingNumber
+            ) VALUES (%s, %s, %s, NOW(), 'Forwarded', 'Forward', %s, %s, %s)
+        """, (
+            session.get('office_id'),   # Office initiating the forward
+            doc_no,                     # Document number
+            session.get('user_id'),     # User performing the action
+            comments,                   # Comments from the form
+            forwarded_to_office_id,     # Selected office from dropdown
+            tracking_number             # Tracking number
+        ))
+
+        conn.commit()
+        flash(f'Document {tracking_number} forwarded successfully!', 'success')
+
+    except mysql.connector.Error as err:
+        conn.rollback()
+        print(f"Database error: {err}")
+        flash(f'Error forwarding document: {err}', 'error')
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+    return redirect(url_for('admin_encoded'))
+
+
+# "COMPLETE" ACTION BUTTON FOR ADMIN
+@app.route('/admin_complete', methods=['POST'])
+def admin_complete():
+    # Retrieve user ID from session
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("You must be logged in to complete a document.")
+        return redirect(url_for('login'))  # Redirect to login if not logged in
+
+    # Get data from the form
+    tracking_number = request.form.get('tracking_number')
+    comments = request.form.get('comments', '')
+    current_date = datetime.now()
+
+    # Connect to the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Update the document status to 'Complete'
+        update_document_query = """
+            UPDATE DOCUMENTS
+            SET Status = 'Complete'
+            WHERE TrackingNumber = %s
+        """
+        cursor.execute(update_document_query, (tracking_number,))
+
+        # Insert a new transaction record in TRANSACTIONS
+        insert_transaction_query = """
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, CompletedDate,
+                ProcessDate, Status, TransactionType, Comments, TrackingNumber
+            ) VALUES (
+                %s, 
+                (SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s), 
+                %s, %s, %s, %s, %s, %s, %s
+            )
+        """
+        cursor.execute(insert_transaction_query, (
+            session.get('office_id'),  # Assuming 'office_id' is also stored in session
+            tracking_number,
+            user_id,
+            current_date,
+            current_date,
+            'Completed',
+            'Complete',
+            comments,
+            tracking_number  # Insert the tracking number into the transaction
+        ))
+
+        # Commit the transaction
+        conn.commit()
+        flash("Document marked as complete successfully.")
+    except Exception as e:
+        conn.rollback()
+        flash(f"An error occurred: {e}")
+    finally:
+        # Close the database connection
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('admin_encoded'))  # Redirect to documents page
+
+
+# "TRACK DOCUMENTS" IN ADMIN OFFICE / track_admin_documents.html
 @app.route('/track_admin_documents')
 @login_required
 def track_admin_documents():
@@ -650,7 +961,7 @@ def track_admin_documents():
         conn.close()
 
 #-----RECORDS OFFICE DASHBOARD-----#
-# RECORD DASHBOARD / _records_dashboard.html
+# "CREATE DOCUMENTS" FOR RECORDS OFFICE / _records_dashboard.html
 @app.route('/_records_dashboard')
 @login_required
 def _records_dashboard():
@@ -694,7 +1005,7 @@ def _records_dashboard():
     # Pass document types, offices, and user to the template
     return render_template('records_office/_records_dashboard.html', user=user, offices=offices, document_type=document_type)
 
-# DISPLAY ALL ENCODED DOCUMENTS FOR RECORDS / enncoded_documents.html
+# "MY DOCUMENTS" FOR RECORDS OFFICE / enncoded_documents.html
 @app.route('/encoded_documents', methods=['GET'])
 @login_required
 def encoded_documents():
@@ -714,7 +1025,7 @@ def encoded_documents():
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # Fetch paginated documents for the user including received documents
+        # Fetch paginated documents for the user, excluding those marked as 'Complete'
         cursor.execute("""        
             SELECT d.TrackingNumber, 
                    u.Firstname, 
@@ -725,42 +1036,46 @@ def encoded_documents():
                    COALESCE(s.SchoolName, o.OfficeName, 'N/A') AS SchoolOrOffice, 
                    d.DateEncoded, 
                    d.DateReceived, 
-                   d.Status,
-                   d.OfficeIDToSend
+                   d.Status
             FROM DOCUMENTS d
             JOIN USERS u ON d.UserID = u.UserID
             JOIN DOCUMENT_TYPE dt ON d.DocTypeID = dt.DocTypeID
             LEFT JOIN SCHOOLS s ON d.SchoolID = s.SchoolID
             LEFT JOIN OFFICES o ON d.OfficeIDToSend = o.OfficeID
-            WHERE d.UserID = %s OR d.Status = 'Received'
+            WHERE (d.UserID = %s OR d.Status = 'Received') AND d.Status != 'Complete'
             ORDER BY d.DateEncoded DESC
             LIMIT %s OFFSET %s
         """, (user_id, per_page, offset))
 
         documents = cursor.fetchall()
 
-        # Count total documents for the user including received documents
+        # Fetch offices to populate the dropdown
+        cursor.execute("SELECT OfficeID, OfficeName FROM OFFICES")
+        offices = cursor.fetchall()
+
+        # Count total documents for the user, excluding completed documents
         cursor.execute("""
-            SELECT COUNT(*) 
+            SELECT COUNT(*) AS total_documents
             FROM DOCUMENTS 
-            WHERE UserID = %s OR Status = 'Received'
+            WHERE (UserID = %s OR Status = 'Received') AND Status != 'Complete'
         """, (user_id,))
-        total_documents = cursor.fetchone()['COUNT(*)']
+        total_documents = cursor.fetchone()['total_documents']
         total_pages = (total_documents + per_page - 1) // per_page
 
         return render_template(
             'records_office/encoded_documents.html',
             documents=documents,
+            offices=offices,  # Pass the office data to the template
             current_page=page,
-            total_pages=total_pages  # Ensure total_pages is defined here
+            total_pages=total_pages
         )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
         conn.close()
-
-# DISPLAY RECEIVE ALL DOCUMENTS FOR RECORDS / receive_documents.html
+   
+# "DOCUMENTS FOR RECEIVE" FOR RECORDS OFFICE / receive_documents.html
 @app.route('/receive_documents')
 @login_required
 def receive_documents():
@@ -792,6 +1107,7 @@ def receive_documents():
             LEFT JOIN SCHOOLS s ON d.SchoolID = s.SchoolID
             LEFT JOIN OFFICES o ON d.OfficeID = o.OfficeID  -- Join with Offices
             WHERE d.OfficeIDToSend = %s  -- Filter by the OfficeID for Records Office
+              AND d.Status != 'Complete'  -- Exclude completed documents
               AND d.Status != 'received'   -- Exclude received documents
             ORDER BY d.DateEncoded DESC
             LIMIT %s OFFSET %s
@@ -804,7 +1120,8 @@ def receive_documents():
             SELECT COUNT(*) FROM DOCUMENTS d 
             JOIN USERS u ON d.UserID = u.UserID 
             WHERE d.OfficeIDToSend = %s 
-              AND d.Status != 'received'  -- Count only non-received documents
+              AND d.Status != 'Complete'  -- Count only non-completed documents
+              AND d.Status != 'received'  -- Exclude received documents
         """, (session.get('office_id'),))
         
         total_documents = cursor.fetchone()['COUNT(*)']
@@ -826,41 +1143,46 @@ def receive_documents():
 def success_page():
     return "Your details have been submitted successfully!"
 
+# "RECEIVE" ACTION BUTTON FOR RECORDS OFFICE
 @app.route('/receive_document/<int:doc_no>', methods=['POST'])
 @login_required
-def handle_receive_document(doc_no):  # Renamed the function
+def handle_receive_document(doc_no):
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        # 1. Update the status of the document to 'received'
+        # 1. Update the status of the document to 'Received' and set DateReceived
         cursor.execute("""
             UPDATE DOCUMENTS
             SET Status = %s, DateReceived = NOW()
-            WHERE DocNo = %s AND OfficeIDToSend = %s
-        """, ('received', doc_no, session.get('office_id')))
+            WHERE DocNo = %s AND OfficeID = %s
+        """, ('Received', doc_no, session.get('office_id')))
         
         if cursor.rowcount == 0:
             return jsonify({"error": "Document not found or already received."}), 404
-        
-        # 2. Insert the transaction into the TRANSACTIONS table
+
+        # 2. Fetch the TrackingNumber for this document
+        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
+        tracking_number_result = cursor.fetchone()
+        tracking_number = tracking_number_result[0] if tracking_number_result else None
+
+        # 3. Insert the transaction into the TRANSACTIONS table
         cursor.execute("""
             INSERT INTO TRANSACTIONS (
-                OfficeID, PreviousOfficeID, DocNo, UserID, 
-                ReceivedDate, Status, TransactionType
+                OfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType, TrackingNumber
             )
-            VALUES (%s, %s, %s, %s, NOW(), %s, %s)
+            VALUES (%s, %s, %s, NOW(), %s, %s, %s)
         """, (
             session.get('office_id'),  # Office receiving the document
-            None,  # Assuming there's no PreviousOfficeID in this case
-            doc_no,  # Document number being received
-            session.get('user_id'),  # The user performing the action
-            'received',  # Status of the transaction
-            'Receive'  # Type of transaction
+            doc_no,                    # Document number being received
+            session.get('user_id'),    # The user performing the action
+            'Received',                # Status of the transaction
+            'Receive',                 # Type of transaction
+            tracking_number            # TrackingNumber associated with this document
         ))
 
         conn.commit()
-
         return redirect(url_for('receive_documents'))
 
     except Exception as e:
@@ -872,7 +1194,130 @@ def handle_receive_document(doc_no):  # Renamed the function
         conn.close()
 
 
-# TRACK ALL DOCUMENTS IN RECORDS OFFICE / track_records_documents.html
+# "FORWARD" ACTION BUTTON FOR RECORDS OFFICE
+@app.route('/forward_document', methods=['POST'])
+def forward_document():
+    tracking_number = request.form.get('tracking_number')
+    comments = request.form.get('comments')
+    forwarded_to_office_id = request.form.get('forwarded_to_office_id')  # Capture selected office ID
+
+    try:
+        # Connect to the database
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+
+        # Verify that the document exists
+        cursor.execute("SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s", (tracking_number,))
+        document = cursor.fetchone()
+
+        if not document:
+            flash(f'Document with tracking number {tracking_number} does not exist.', 'error')
+            return redirect(url_for('encoded_documents'))
+
+        # Retrieve the document number (DocNo)
+        doc_no = document[0]
+
+        # Update document status to 'Forwarded'
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = 'Forwarded'
+            WHERE TrackingNumber = %s
+        """, (tracking_number,))
+
+        # Insert a new transaction record with dynamic ForwardedToOfficeID
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, ForwardDate, Status, TransactionType, Comments, ForwardedToOfficeID, TrackingNumber
+            ) VALUES (%s, %s, %s, NOW(), 'Forwarded', 'Forward', %s, %s, %s)
+        """, (
+            session.get('office_id'),   # Office initiating the forward
+            doc_no,                     # Document number
+            session.get('user_id'),     # User performing the action
+            comments,                   # Comments from the form
+            forwarded_to_office_id,     # Selected office from dropdown
+            tracking_number             # Tracking number
+        ))
+
+        conn.commit()
+        flash(f'Document {tracking_number} forwarded successfully!', 'success')
+
+    except mysql.connector.Error as err:
+        conn.rollback()
+        print(f"Database error: {err}")
+        flash(f'Error forwarding document: {err}', 'error')
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+    return redirect(url_for('encoded_documents'))
+
+# "COMPLETE" ACTION BUTTON FOR RECORDS OFFICE
+@app.route('/complete_document', methods=['POST'])
+def complete_document():
+    # Retrieve user ID from session
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("You must be logged in to complete a document.")
+        return redirect(url_for('login'))  # Redirect to login if not logged in
+
+    # Get data from the form
+    tracking_number = request.form.get('tracking_number')
+    comments = request.form.get('comments', '')
+    current_date = datetime.now()
+
+    # Connect to the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Update the document status to 'Complete'
+        update_document_query = """
+            UPDATE DOCUMENTS
+            SET Status = 'Complete'
+            WHERE TrackingNumber = %s
+        """
+        cursor.execute(update_document_query, (tracking_number,))
+
+        # Insert a new transaction record in TRANSACTIONS
+        insert_transaction_query = """
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, CompletedDate,
+                ProcessDate, Status, TransactionType, Comments, TrackingNumber
+            ) VALUES (
+                %s, 
+                (SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s), 
+                %s, %s, %s, %s, %s, %s, %s
+            )
+        """
+        cursor.execute(insert_transaction_query, (
+            session.get('office_id'),  # Assuming 'office_id' is also stored in session
+            tracking_number,
+            user_id,
+            current_date,
+            current_date,
+            'Completed',
+            'Complete',
+            comments,
+            tracking_number  # Insert the tracking number into the transaction
+        ))
+
+        # Commit the transaction
+        conn.commit()
+        flash("Document marked as complete successfully.")
+    except Exception as e:
+        conn.rollback()
+        flash(f"An error occurred: {e}")
+    finally:
+        # Close the database connection
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('encoded_documents'))  # Redirect to documents page
+
+
+# TRACK DOCUMENTS IN RECORDS OFFICE / track_records_documents.html
 @app.route('/track_records_documents')
 @login_required
 def track_records_documents():
@@ -927,7 +1372,7 @@ def track_records_documents():
 #-----END OF RECORDS DASHBOARD-----#
 
 #-----BUDGET OFFICE DASHBOARD-----#
-# BUDGET DASHBOARD / _budget_dashboard.html
+# "CREATE DOCUMENTS" FOR BUDGET OFFICE / _budget_dashboard.html
 @app.route('/_budget_dashboard')
 @login_required
 def _budget_dashboard():
@@ -971,6 +1416,7 @@ def _budget_dashboard():
     # Pass document types, offices, and user to the template
     return render_template('budget_office/_budget_dashboard.html', user=user, offices=offices, document_type=document_type)
 
+# "MY DOCUMENTS" FOR BUDGET OFFICE / budget_encoded.html
 @app.route('/budget_encoded', methods=['GET'])
 @login_required
 def budget_encoded():
@@ -990,7 +1436,7 @@ def budget_encoded():
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # Fetch paginated documents for the user along with document type and school/office details
+        # Fetch paginated documents for the user, excluding completed documents
         cursor.execute("""
             SELECT d.TrackingNumber, 
                    u.Firstname, 
@@ -1008,15 +1454,15 @@ def budget_encoded():
             JOIN DOCUMENT_TYPE dt ON d.DocTypeID = dt.DocTypeID
             LEFT JOIN SCHOOLS s ON d.SchoolID = s.SchoolID
             LEFT JOIN OFFICES o ON d.OfficeIDToSend = o.OfficeID
-            WHERE d.UserID = %s
+            WHERE d.UserID = %s AND d.Status != 'Completed'
             ORDER BY d.DateEncoded DESC
             LIMIT %s OFFSET %s
         """, (user_id, per_page, offset))
 
         documents = cursor.fetchall()
 
-        # Count total documents for the user
-        cursor.execute("SELECT COUNT(*) FROM DOCUMENTS WHERE UserID = %s", (user_id,))
+        # Count total documents for the user, excluding completed documents
+        cursor.execute("SELECT COUNT(*) FROM DOCUMENTS WHERE UserID = %s AND Status != 'Completed'", (user_id,))
         total_documents = cursor.fetchone()['COUNT(*)']
         total_pages = (total_documents + per_page - 1) // per_page
 
@@ -1032,7 +1478,7 @@ def budget_encoded():
         cursor.close()
         conn.close()
 
-#DISPLAY RECEIVED DOCUMENTS FOR BUDGET / budget_documents.html
+# "DOCUMENT FOR RECEIVE" FOR BUDGET / budget_documents.html
 @app.route('/budget_documents')
 @login_required
 def budget_documents():
@@ -1044,9 +1490,9 @@ def budget_documents():
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # Fetch paginated documents created by USERS and forwarded to the Budget Office
-        cursor.execute(""" 
-            SELECT d.DocNo,  -- Include the DocNo here
+        # Fetch documents that have been forwarded to the Budget Office
+        cursor.execute("""
+            SELECT d.DocNo, 
                    d.TrackingNumber, 
                    u.Firstname, 
                    u.Lastname, 
@@ -1054,45 +1500,227 @@ def budget_documents():
                    d.DocDetails, 
                    d.DocPurpose, 
                    s.SchoolName, 
-                   o.OfficeName,  -- Fetch the Office Name
+                   o.OfficeName, 
                    d.DateEncoded, 
                    d.DateReceived, 
-                   d.Status
+                   t.Status,
+                   t.ForwardedToOfficeID,
+                   t.Comments
             FROM DOCUMENTS d
             JOIN USERS u ON d.UserID = u.UserID
             JOIN DOCUMENT_TYPE dt ON d.DocTypeID = dt.DocTypeID
             LEFT JOIN SCHOOLS s ON d.SchoolID = s.SchoolID
-            LEFT JOIN OFFICES o ON d.OfficeID = o.OfficeID  -- Join with Offices
-            WHERE d.OfficeIDToSend = %s  -- Filter by the OfficeID for Budget Office
-            ORDER BY d.DateEncoded DESC
+            LEFT JOIN OFFICES o ON d.OfficeID = o.OfficeID
+            JOIN TRANSACTIONS t ON t.DocNo = d.DocNo
+            WHERE t.ForwardedToOfficeID = %s AND t.Status = 'Forwarded'
+            ORDER BY t.ForwardDate DESC
             LIMIT %s OFFSET %s
         """, (session.get('office_id'), per_page, offset))  # Assuming office_id is stored in session
 
         documents = cursor.fetchall()
 
-        # Count total documents forwarded to the Budget Office created by USERS and STAFF
+        # Count total documents forwarded to the Budget Office
         cursor.execute("""
-            SELECT COUNT(*) FROM DOCUMENTS d 
-            JOIN USERS u ON d.UserID = u.UserID 
-            WHERE d.OfficeIDToSend = %s 
+            SELECT COUNT(*) 
+            FROM TRANSACTIONS t
+            JOIN DOCUMENTS d ON t.DocNo = d.DocNo
+            WHERE t.ForwardedToOfficeID = %s AND t.Status = 'Forwarded'
         """, (session.get('office_id'),))
-        
+
         total_documents = cursor.fetchone()['COUNT(*)']
         total_pages = (total_documents + per_page - 1) // per_page
 
         return render_template(
-            'budget_office/budget_documents.html',  # Ensure you have this template
+            'budget_office/budget_documents.html',  # Template path
             documents=documents,
             current_page=page,
             total_pages=total_pages
         )
+
     except Exception as e:
+        conn.rollback()
         return jsonify({"error": str(e)}), 500
+
     finally:
         cursor.close()
         conn.close()
 
-# TRACK ALL DOCUMENTS IN BUDGET OFFICE / track_budget_documents.html
+
+
+# "RECEIVE" ACTION BUTTON FOR BUDGET
+@app.route('/budget_receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def handle_budget_receive_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Update the status of the document to 'Received' and set DateReceived
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = %s, DateReceived = NOW()
+            WHERE DocNo = %s AND OfficeID = %s
+        """, ('Received', doc_no, session.get('office_id')))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Document not found or already received."}), 404
+
+        # 2. Fetch the TrackingNumber for this document
+        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
+        tracking_number_result = cursor.fetchone()
+        tracking_number = tracking_number_result[0] if tracking_number_result else None
+
+        # 3. Insert the transaction into the TRANSACTIONS table
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType, TrackingNumber
+            )
+            VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+        """, (
+            session.get('office_id'),  # Office receiving the document
+            doc_no,                    # Document number being received
+            session.get('user_id'),    # The user performing the action
+            'Received',                # Status of the transaction
+            'Receive',                 # Type of transaction
+            tracking_number            # TrackingNumber associated with this document
+        ))
+
+        conn.commit()
+        return redirect(url_for('budget_documents'))
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+# "FORWARD" ACTION BUTTON FOR BUDGET OFFICE
+@app.route('/budget_forward', methods=['POST'])
+def budget_forward():
+    tracking_number = request.form.get('tracking_number')
+    comments = request.form.get('comments')
+    forwarded_to_office_id = request.form.get('forwarded_to_office_id')  # Capture selected office ID
+
+    try:
+        # Connect to the database
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+
+        # Verify that the document exists
+        cursor.execute("SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s", (tracking_number,))
+        document = cursor.fetchone()
+
+        if not document:
+            flash(f'Document with tracking number {tracking_number} does not exist.', 'error')
+            return redirect(url_for('encoded_documents'))
+
+        # Retrieve the document number (DocNo)
+        doc_no = document[0]
+
+        # Update document status to 'Forwarded'
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = 'Forwarded'
+            WHERE TrackingNumber = %s
+        """, (tracking_number,))
+
+        # Insert a new transaction record with dynamic ForwardedToOfficeID
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, ForwardDate, Status, TransactionType, Comments, ForwardedToOfficeID, TrackingNumber
+            ) VALUES (%s, %s, %s, NOW(), 'Forwarded', 'Forward', %s, %s, %s)
+        """, (
+            session.get('office_id'),   # Office initiating the forward
+            doc_no,                     # Document number
+            session.get('user_id'),     # User performing the action
+            comments,                   # Comments from the form
+            forwarded_to_office_id,     # Selected office from dropdown
+            tracking_number             # Tracking number
+        ))
+
+        conn.commit()
+        flash(f'Document {tracking_number} forwarded successfully!', 'success')
+
+    except mysql.connector.Error as err:
+        conn.rollback()
+        print(f"Database error: {err}")
+        flash(f'Error forwarding document: {err}', 'error')
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+    return redirect(url_for('budget_encoded'))
+
+
+#COMPLETE ACTION BUTTON FOR RECORDS OFFICE
+@app.route('/budget_complete', methods=['POST'])
+def budget_complete():
+    # Retrieve user ID from session
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("You must be logged in to complete a document.")
+        return redirect(url_for('login'))  # Redirect to login if not logged in
+
+    # Get data from the form
+    tracking_number = request.form.get('tracking_number')
+    comments = request.form.get('comments', '')
+    current_date = datetime.now()
+
+    # Connect to the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Update the document status to 'Complete'
+        update_document_query = """
+            UPDATE DOCUMENTS
+            SET Status = 'Completed'
+            WHERE TrackingNumber = %s
+        """
+        cursor.execute(update_document_query, (tracking_number,))
+
+        # Insert a new transaction record in TRANSACTIONS
+        insert_transaction_query = """
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, CompletedDate,
+                ProcessDate, Status, TransactionType, Comments, TrackingNumber
+            ) VALUES (
+                %s, 
+                (SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s), 
+                %s, %s, %s, %s, %s, %s, %s
+            )
+        """
+        cursor.execute(insert_transaction_query, (
+            session.get('office_id'),  # Assuming 'office_id' is also stored in session
+            tracking_number,
+            user_id,
+            current_date,
+            current_date,
+            'Completed',
+            'Complete',
+            comments,
+            tracking_number  # Insert the tracking number into the transaction
+        ))
+
+        # Commit the transaction
+        conn.commit()
+        flash("Document marked as complete successfully.")
+    except Exception as e:
+        conn.rollback()
+        flash(f"An error occurred: {e}")
+    finally:
+        # Close the database connection
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('budget_encoded'))  # Redirect to documents page
+
+# TRACK DOCUMENTS IN BUDGET OFFICE / track_budget_documents.html
 @app.route('/track_budget_documents')
 @login_required
 def track_budget_documents():
@@ -1144,10 +1772,10 @@ def track_budget_documents():
     finally:
         cursor.close()
         conn.close()
-#-----END OF BUDGE DASHBOARD-----#
+#-----END OF BUDGET DASHBOARD-----#
 
 #-----CASHIER OFFICE DASHBOARD------#
-# CASHIER DASHBOARD / _cashier_dashboard.html
+# "CREATE DOCUMENTS" FOR CASHIER OFFICE / _cashier_dashboard.html
 @app.route('/_cashier_dashboard')
 @login_required
 def _cashier_dashboard():
@@ -1198,7 +1826,7 @@ def _cashier_dashboard():
         document_type=document_types  # Renamed variable for clarity
     )
 
-# DISPLAY ENCODED DOCUMENTS
+# "MY DOCUMENTS" FOR CASHIER OFFICE / cashier_encoded.html
 @app.route('/cashier_encoded', methods=['GET'])
 @login_required
 def cashier_encoded():
@@ -1218,7 +1846,7 @@ def cashier_encoded():
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # Fetch paginated documents for the user along with document type and school/office details
+        # Fetch paginated documents for the user, excluding completed documents
         cursor.execute("""
             SELECT d.TrackingNumber, 
                    u.Firstname, 
@@ -1236,15 +1864,15 @@ def cashier_encoded():
             JOIN DOCUMENT_TYPE dt ON d.DocTypeID = dt.DocTypeID
             LEFT JOIN SCHOOLS s ON d.SchoolID = s.SchoolID
             LEFT JOIN OFFICES o ON d.OfficeIDToSend = o.OfficeID
-            WHERE d.UserID = %s
+            WHERE d.UserID = %s AND d.Status != 'Completed'
             ORDER BY d.DateEncoded DESC
             LIMIT %s OFFSET %s
         """, (user_id, per_page, offset))
 
         documents = cursor.fetchall()
 
-        # Count total documents for the user
-        cursor.execute("SELECT COUNT(*) FROM DOCUMENTS WHERE UserID = %s", (user_id,))
+        # Count total documents for the user, excluding completed documents
+        cursor.execute("SELECT COUNT(*) FROM DOCUMENTS WHERE UserID = %s AND Status != 'Completed'", (user_id,))
         total_documents = cursor.fetchone()['COUNT(*)']
         total_pages = (total_documents + per_page - 1) // per_page
 
@@ -1260,7 +1888,7 @@ def cashier_encoded():
         cursor.close()
         conn.close()
 
-#DISPLAY RECEIVED DOCUMENTS FOR CASHIER /  cashier_documents.html
+# "DOCUMENT FOR RECEIVE" FOR CASHIER OFFICE /  cashier_documents.html
 @app.route('/cashier_documents')
 @login_required
 def cashier_documents():
@@ -1320,7 +1948,180 @@ def cashier_documents():
         cursor.close()
         conn.close()
 
-# TRACK ALL DOCUMENTS IN CASHIER OFFICE / track_cashier_documents.html
+# "RECEIVE" ACTION BUTTON FOR CASHIER OFFICE
+@app.route('/cashier_receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def handle_cashier_receive_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Update the status of the document to 'Received' and set DateReceived
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = %s, DateReceived = NOW()
+            WHERE DocNo = %s AND OfficeID = %s
+        """, ('Received', doc_no, session.get('office_id')))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Document not found or already received."}), 404
+
+        # 2. Fetch the TrackingNumber for this document
+        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
+        tracking_number_result = cursor.fetchone()
+        tracking_number = tracking_number_result[0] if tracking_number_result else None
+
+        # 3. Insert the transaction into the TRANSACTIONS table
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType, TrackingNumber
+            )
+            VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+        """, (
+            session.get('office_id'),  # Office receiving the document
+            doc_no,                    # Document number being received
+            session.get('user_id'),    # The user performing the action
+            'Received',                # Status of the transaction
+            'Receive',                 # Type of transaction
+            tracking_number            # TrackingNumber associated with this document
+        ))
+
+        conn.commit()
+        return redirect(url_for('cashier_documents'))
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+# "FORWARD" ACTION BUTTON FOR CASHIER OFFICE
+@app.route('/cashier_forward', methods=['POST'])
+def cashier_forward():
+    tracking_number = request.form.get('tracking_number')
+    comments = request.form.get('comments')
+    forwarded_to_office_id = request.form.get('forwarded_to_office_id')  # Capture selected office ID
+
+    try:
+        # Connect to the database
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+
+        # Verify that the document exists
+        cursor.execute("SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s", (tracking_number,))
+        document = cursor.fetchone()
+
+        if not document:
+            flash(f'Document with tracking number {tracking_number} does not exist.', 'error')
+            return redirect(url_for('encoded_documents'))
+
+        # Retrieve the document number (DocNo)
+        doc_no = document[0]
+
+        # Update document status to 'Forwarded'
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = 'Forwarded'
+            WHERE TrackingNumber = %s
+        """, (tracking_number,))
+
+        # Insert a new transaction record with dynamic ForwardedToOfficeID
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, ForwardDate, Status, TransactionType, Comments, ForwardedToOfficeID, TrackingNumber
+            ) VALUES (%s, %s, %s, NOW(), 'Forwarded', 'Forward', %s, %s, %s)
+        """, (
+            session.get('office_id'),   # Office initiating the forward
+            doc_no,                     # Document number
+            session.get('user_id'),     # User performing the action
+            comments,                   # Comments from the form
+            forwarded_to_office_id,     # Selected office from dropdown
+            tracking_number             # Tracking number
+        ))
+
+        conn.commit()
+        flash(f'Document {tracking_number} forwarded successfully!', 'success')
+
+    except mysql.connector.Error as err:
+        conn.rollback()
+        print(f"Database error: {err}")
+        flash(f'Error forwarding document: {err}', 'error')
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+    return redirect(url_for('cashier_encoded'))
+
+
+# "COMPLETE" ACTION BUTTON FOR CASHIER
+@app.route('/cashier_complete', methods=['POST'])
+def cashier_complete():
+    # Retrieve user ID from session
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("You must be logged in to complete a document.")
+        return redirect(url_for('login'))  # Redirect to login if not logged in
+
+    # Get data from the form
+    tracking_number = request.form.get('tracking_number')
+    comments = request.form.get('comments', '')
+    current_date = datetime.now()
+
+    # Connect to the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Update the document status to 'Complete'
+        update_document_query = """
+            UPDATE DOCUMENTS
+            SET Status = 'Completed'
+            WHERE TrackingNumber = %s
+        """
+        cursor.execute(update_document_query, (tracking_number,))
+
+        # Insert a new transaction record in TRANSACTIONS
+        insert_transaction_query = """
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, CompletedDate,
+                ProcessDate, Status, TransactionType, Comments, TrackingNumber
+            ) VALUES (
+                %s, 
+                (SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s), 
+                %s, %s, %s, %s, %s, %s, %s
+            )
+        """
+        cursor.execute(insert_transaction_query, (
+            session.get('office_id'),  # Assuming 'office_id' is also stored in session
+            tracking_number,
+            user_id,
+            current_date,
+            current_date,
+            'Completed',
+            'Complete',
+            comments,
+            tracking_number  # Insert the tracking number into the transaction
+        ))
+
+        # Commit the transaction
+        conn.commit()
+        flash("Document marked as complete successfully.")
+    except Exception as e:
+        conn.rollback()
+        flash(f"An error occurred: {e}")
+    finally:
+        # Close the database connection
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('cashier_encoded'))  # Redirect to documents page
+
+# "TRACK DOCUMENTS" IN CASHIER OFFICE / track_cashier_documents.html
 @app.route('/track_cashier_documents')
 @login_required
 def track_cashier_documents():
@@ -1373,12 +2174,6 @@ def track_cashier_documents():
         cursor.close()
         conn.close()
 
-@app.route('/forward_document/<int:doc_id>', methods=['POST'])
-def forward_document(doc_id):
-    # Logic for forwarding the document
-    # You can access the doc_id here and perform the forwarding action.
-    return redirect(url_for('receive_documents'))
-
 #DISPLAY FORWARDED DOCUMENTS FOR CASHIER
 @app.route('/cashier_forwarded_documents', methods=['GET'])
 def cashier_forwarded_documents():
@@ -1399,7 +2194,7 @@ def cashier_forwarded_documents():
 #-----END OF CASHIER DASHOBARD-----#
 
 #-----HRMU OFFICE DASHBOARD-----#
-# HRMU DASHBOARD / _hrmu_dashboard.html
+# "CREATE DOCUMENTS " FOR FOR HRMU OFFICE / _hrmu_dashboard.html
 @app.route('/_hrmu_dashboard')
 @login_required
 def _hrmu_dashboard():
@@ -1443,6 +2238,7 @@ def _hrmu_dashboard():
     # Pass document types, offices, and user to the template
     return render_template('hrmu_office/_hrmu_dashboard.html', user=user, offices=offices, document_type=document_type)
 
+# "MY DOCUMENTS" FOR HRMU OFFICE / hrmu_encoded.html
 @app.route('/hrmu_encoded', methods=['GET'])
 @login_required
 def hrmu_encoded():
@@ -1504,6 +2300,7 @@ def hrmu_encoded():
         cursor.close()
         conn.close()
 
+# "DOCUMENT FOR RECEIVE" FOR HRMU OFFICE / hrmu_documents.html
 @app.route('/hrmu_documents')
 @login_required
 def hrmu_documents():
@@ -1563,7 +2360,181 @@ def hrmu_documents():
         cursor.close()
         conn.close()
 
-# TRACK ALL DOCUMENTS IN HRMU OFFICE / track_cashier_documents.html
+# "RECEIVE" ACTION BUTTON FOR HRMU OFFICE
+@app.route('/hrmu_receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def handle_hrmu_receive_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Update the status of the document to 'Received' and set DateReceived
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = %s, DateReceived = NOW()
+            WHERE DocNo = %s AND OfficeID = %s
+        """, ('Received', doc_no, session.get('office_id')))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Document not found or already received."}), 404
+
+        # 2. Fetch the TrackingNumber for this document
+        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
+        tracking_number_result = cursor.fetchone()
+        tracking_number = tracking_number_result[0] if tracking_number_result else None
+
+        # 3. Insert the transaction into the TRANSACTIONS table
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType, TrackingNumber
+            )
+            VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+        """, (
+            session.get('office_id'),  # Office receiving the document
+            doc_no,                    # Document number being received
+            session.get('user_id'),    # The user performing the action
+            'Received',                # Status of the transaction
+            'Receive',                 # Type of transaction
+            tracking_number            # TrackingNumber associated with this document
+        ))
+
+        conn.commit()
+        return redirect(url_for('hrmu_documents'))
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+# "FORWARD" ACTION BUTTON FOR HRMU OFFICE
+@app.route('/hrmu_forward', methods=['POST'])
+def hrmu_forward():
+    tracking_number = request.form.get('tracking_number')
+    comments = request.form.get('comments')
+    forwarded_to_office_id = request.form.get('forwarded_to_office_id')  # Capture selected office ID
+
+    try:
+        # Connect to the database
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+
+        # Verify that the document exists
+        cursor.execute("SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s", (tracking_number,))
+        document = cursor.fetchone()
+
+        if not document:
+            flash(f'Document with tracking number {tracking_number} does not exist.', 'error')
+            return redirect(url_for('encoded_documents'))
+
+        # Retrieve the document number (DocNo)
+        doc_no = document[0]
+
+        # Update document status to 'Forwarded'
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = 'Forwarded'
+            WHERE TrackingNumber = %s
+        """, (tracking_number,))
+
+        # Insert a new transaction record with dynamic ForwardedToOfficeID
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, ForwardDate, Status, TransactionType, Comments, ForwardedToOfficeID, TrackingNumber
+            ) VALUES (%s, %s, %s, NOW(), 'Forwarded', 'Forward', %s, %s, %s)
+        """, (
+            session.get('office_id'),   # Office initiating the forward
+            doc_no,                     # Document number
+            session.get('user_id'),     # User performing the action
+            comments,                   # Comments from the form
+            forwarded_to_office_id,     # Selected office from dropdown
+            tracking_number             # Tracking number
+        ))
+
+        conn.commit()
+        flash(f'Document {tracking_number} forwarded successfully!', 'success')
+
+    except mysql.connector.Error as err:
+        conn.rollback()
+        print(f"Database error: {err}")
+        flash(f'Error forwarding document: {err}', 'error')
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+    return redirect(url_for('hrmu_encoded'))
+
+
+# "COMPLETE" ACTION BUTTON FOR HRMU OFFICE
+@app.route('/hrmu_complete', methods=['POST'])
+def hrmu_complete():
+    # Retrieve user ID from session
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("You must be logged in to complete a document.")
+        return redirect(url_for('login'))  # Redirect to login if not logged in
+
+    # Get data from the form
+    tracking_number = request.form.get('tracking_number')
+    comments = request.form.get('comments', '')
+    current_date = datetime.now()
+
+    # Connect to the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Update the document status to 'Complete'
+        update_document_query = """
+            UPDATE DOCUMENTS
+            SET Status = 'Completed'
+            WHERE TrackingNumber = %s
+        """
+        cursor.execute(update_document_query, (tracking_number,))
+
+        # Insert a new transaction record in TRANSACTIONS
+        insert_transaction_query = """
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, CompletedDate,
+                ProcessDate, Status, TransactionType, Comments, TrackingNumber
+            ) VALUES (
+                %s, 
+                (SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s), 
+                %s, %s, %s, %s, %s, %s, %s
+            )
+        """
+        cursor.execute(insert_transaction_query, (
+            session.get('office_id'),  # Assuming 'office_id' is also stored in session
+            tracking_number,
+            user_id,
+            current_date,
+            current_date,
+            'Completed',
+            'Complete',
+            comments,
+            tracking_number  # Insert the tracking number into the transaction
+        ))
+
+        # Commit the transaction
+        conn.commit()
+        flash("Document marked as complete successfully.")
+    except Exception as e:
+        conn.rollback()
+        flash(f"An error occurred: {e}")
+    finally:
+        # Close the database connection
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('hrmu_encoded'))  # Redirect to documents page
+
+
+#" TRACK DOCUMENTS" IN HRMU OFFICE / track_cashier_documents.html
 @app.route('/track_hrmu_documents')
 @login_required
 def track_hrmu_documents():
@@ -1618,7 +2589,7 @@ def track_hrmu_documents():
 #-----END OF HRMU DASHBOARD-----#
 
 #-----ICT OFFICE DASHBOARD-----#
-# ICT DASHBOARD / _ict_dashboard.html
+# "CREATE DOCUMENTS" FOR ICT DASHBOARD / _ict_dashboard.html
 @app.route('/_ict_dashboard')
 @login_required
 def _ict_dashboard():
@@ -1662,6 +2633,7 @@ def _ict_dashboard():
     # Pass document types, offices, and user to the template
     return render_template('ict_office/_ict_dashboard.html', user=user, offices=offices, document_type=document_type)
 
+# "MY DOCUMENTS" FOR ICT OFFICE / ict_encoded.html
 @app.route('/ict_encoded', methods=['GET'])
 @login_required
 def ict_encoded():
@@ -1723,6 +2695,7 @@ def ict_encoded():
         cursor.close()
         conn.close()
 
+# "DOCUMENT FOR RECEIVE" FOR ICT OFFICE /ict_documents.html
 @app.route('/ict_documents')
 @login_required
 def ict_documents():
@@ -1782,7 +2755,181 @@ def ict_documents():
         cursor.close()
         conn.close()
 
-# TRACK ALL DOCUMENTS IN ICT OFFICE / track_ict_documents.html
+# "RECEIVE" ACTION BUTTON FOR ICT OFFICE
+@app.route('/ict_receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def handle_ict_receive_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Update the status of the document to 'Received' and set DateReceived
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = %s, DateReceived = NOW()
+            WHERE DocNo = %s AND OfficeID = %s
+        """, ('Received', doc_no, session.get('office_id')))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Document not found or already received."}), 404
+
+        # 2. Fetch the TrackingNumber for this document
+        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
+        tracking_number_result = cursor.fetchone()
+        tracking_number = tracking_number_result[0] if tracking_number_result else None
+
+        # 3. Insert the transaction into the TRANSACTIONS table
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType, TrackingNumber
+            )
+            VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+        """, (
+            session.get('office_id'),  # Office receiving the document
+            doc_no,                    # Document number being received
+            session.get('user_id'),    # The user performing the action
+            'Received',                # Status of the transaction
+            'Receive',                 # Type of transaction
+            tracking_number            # TrackingNumber associated with this document
+        ))
+
+        conn.commit()
+        return redirect(url_for('ict_documents'))
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+# "FORWARD" ACTION BUTTON FOR ICT OFFICE
+@app.route('/ict_forward', methods=['POST'])
+def ict_forward():
+    tracking_number = request.form.get('tracking_number')
+    comments = request.form.get('comments')
+    forwarded_to_office_id = request.form.get('forwarded_to_office_id')  # Capture selected office ID
+
+    try:
+        # Connect to the database
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+
+        # Verify that the document exists
+        cursor.execute("SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s", (tracking_number,))
+        document = cursor.fetchone()
+
+        if not document:
+            flash(f'Document with tracking number {tracking_number} does not exist.', 'error')
+            return redirect(url_for('encoded_documents'))
+
+        # Retrieve the document number (DocNo)
+        doc_no = document[0]
+
+        # Update document status to 'Forwarded'
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = 'Forwarded'
+            WHERE TrackingNumber = %s
+        """, (tracking_number,))
+
+        # Insert a new transaction record with dynamic ForwardedToOfficeID
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, ForwardDate, Status, TransactionType, Comments, ForwardedToOfficeID, TrackingNumber
+            ) VALUES (%s, %s, %s, NOW(), 'Forwarded', 'Forward', %s, %s, %s)
+        """, (
+            session.get('office_id'),   # Office initiating the forward
+            doc_no,                     # Document number
+            session.get('user_id'),     # User performing the action
+            comments,                   # Comments from the form
+            forwarded_to_office_id,     # Selected office from dropdown
+            tracking_number             # Tracking number
+        ))
+
+        conn.commit()
+        flash(f'Document {tracking_number} forwarded successfully!', 'success')
+
+    except mysql.connector.Error as err:
+        conn.rollback()
+        print(f"Database error: {err}")
+        flash(f'Error forwarding document: {err}', 'error')
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+    return redirect(url_for('ict_encoded'))
+
+
+# "COMPLETE" ACTION BUTTON FOR ICT OFFICE
+@app.route('/ict_complete', methods=['POST'])
+def ict_complete():
+    # Retrieve user ID from session
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("You must be logged in to complete a document.")
+        return redirect(url_for('login'))  # Redirect to login if not logged in
+
+    # Get data from the form
+    tracking_number = request.form.get('tracking_number')
+    comments = request.form.get('comments', '')
+    current_date = datetime.now()
+
+    # Connect to the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Update the document status to 'Complete'
+        update_document_query = """
+            UPDATE DOCUMENTS
+            SET Status = 'Completed'
+            WHERE TrackingNumber = %s
+        """
+        cursor.execute(update_document_query, (tracking_number,))
+
+        # Insert a new transaction record in TRANSACTIONS
+        insert_transaction_query = """
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, CompletedDate,
+                ProcessDate, Status, TransactionType, Comments, TrackingNumber
+            ) VALUES (
+                %s, 
+                (SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s), 
+                %s, %s, %s, %s, %s, %s, %s
+            )
+        """
+        cursor.execute(insert_transaction_query, (
+            session.get('office_id'),  # Assuming 'office_id' is also stored in session
+            tracking_number,
+            user_id,
+            current_date,
+            current_date,
+            'Completed',
+            'Complete',
+            comments,
+            tracking_number  # Insert the tracking number into the transaction
+        ))
+
+        # Commit the transaction
+        conn.commit()
+        flash("Document marked as complete successfully.")
+    except Exception as e:
+        conn.rollback()
+        flash(f"An error occurred: {e}")
+    finally:
+        # Close the database connection
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('ict_encoded'))  # Redirect to documents page
+
+
+#" TRACK DOCUMENTS" IN ICT OFFICE / track_ict_documents.html
 @app.route('/track_ict_documents')
 @login_required
 def track_ict_documents():
@@ -1837,7 +2984,7 @@ def track_ict_documents():
 #-----END OF ICT DASHBOARD-----#
 
 #-----LEGAL OFFICE DASHBOARD-----#
-# LEGAL DASHOBARD / _legal_dashboard.html
+# "CREATE DOCUMENTS" FOR LEGAL OFFICE / _legal_dashboard.html
 @app.route('/_legal_dashboard')
 @login_required
 def _legal_dashboard():
@@ -1881,6 +3028,7 @@ def _legal_dashboard():
     # Pass document types, offices, and user to the template
     return render_template('legal_office/_legal_dashboard.html', user=user, offices=offices, document_type=document_type)
 
+# "MY DOCUMENTS" FOR LEGAL OFFICE / legal_encoded.html
 @app.route('/legal_encoded', methods=['GET'])
 @login_required
 def legal_encoded():
@@ -1942,6 +3090,7 @@ def legal_encoded():
         cursor.close()
         conn.close()
 
+# "DOCUMENTS FOR RECEIVE" FOR LEGAL OFFICE / legal_documents.html
 @app.route('/legal_documents')
 @login_required
 def legal_documents():
@@ -2001,7 +3150,181 @@ def legal_documents():
         cursor.close()
         conn.close()
 
-# TRACK ALL DOCUMENTS IN LEGAL OFFICE /  track_legal_documents.html
+# "RECEIVE" ACTION BUTTON IN LEGAL OFFICE
+@app.route('/legal_receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def handle_legal_receive_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Update the status of the document to 'Received' and set DateReceived
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = %s, DateReceived = NOW()
+            WHERE DocNo = %s AND OfficeID = %s
+        """, ('Received', doc_no, session.get('office_id')))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Document not found or already received."}), 404
+
+        # 2. Fetch the TrackingNumber for this document
+        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
+        tracking_number_result = cursor.fetchone()
+        tracking_number = tracking_number_result[0] if tracking_number_result else None
+
+        # 3. Insert the transaction into the TRANSACTIONS table
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType, TrackingNumber
+            )
+            VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+        """, (
+            session.get('office_id'),  # Office receiving the document
+            doc_no,                    # Document number being received
+            session.get('user_id'),    # The user performing the action
+            'Received',                # Status of the transaction
+            'Receive',                 # Type of transaction
+            tracking_number            # TrackingNumber associated with this document
+        ))
+
+        conn.commit()
+        return redirect(url_for('legal_documents'))
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+# "FORWARD" ACTION BUTTON FOR LEGAL OFFICE
+@app.route('/legal_forward', methods=['POST'])
+def legal_forward():
+    tracking_number = request.form.get('tracking_number')
+    comments = request.form.get('comments')
+    forwarded_to_office_id = request.form.get('forwarded_to_office_id')  # Capture selected office ID
+
+    try:
+        # Connect to the database
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+
+        # Verify that the document exists
+        cursor.execute("SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s", (tracking_number,))
+        document = cursor.fetchone()
+
+        if not document:
+            flash(f'Document with tracking number {tracking_number} does not exist.', 'error')
+            return redirect(url_for('encoded_documents'))
+
+        # Retrieve the document number (DocNo)
+        doc_no = document[0]
+
+        # Update document status to 'Forwarded'
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = 'Forwarded'
+            WHERE TrackingNumber = %s
+        """, (tracking_number,))
+
+        # Insert a new transaction record with dynamic ForwardedToOfficeID
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, ForwardDate, Status, TransactionType, Comments, ForwardedToOfficeID, TrackingNumber
+            ) VALUES (%s, %s, %s, NOW(), 'Forwarded', 'Forward', %s, %s, %s)
+        """, (
+            session.get('office_id'),   # Office initiating the forward
+            doc_no,                     # Document number
+            session.get('user_id'),     # User performing the action
+            comments,                   # Comments from the form
+            forwarded_to_office_id,     # Selected office from dropdown
+            tracking_number             # Tracking number
+        ))
+
+        conn.commit()
+        flash(f'Document {tracking_number} forwarded successfully!', 'success')
+
+    except mysql.connector.Error as err:
+        conn.rollback()
+        print(f"Database error: {err}")
+        flash(f'Error forwarding document: {err}', 'error')
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+    return redirect(url_for('legal_encoded'))
+
+
+# "COMPLETE" ACTION BUTTON IN LEGAL OFFICE
+@app.route('/legal_complete', methods=['POST'])
+def legal_complete():
+    # Retrieve user ID from session
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("You must be logged in to complete a document.")
+        return redirect(url_for('login'))  # Redirect to login if not logged in
+
+    # Get data from the form
+    tracking_number = request.form.get('tracking_number')
+    comments = request.form.get('comments', '')
+    current_date = datetime.now()
+
+    # Connect to the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Update the document status to 'Complete'
+        update_document_query = """
+            UPDATE DOCUMENTS
+            SET Status = 'Completed'
+            WHERE TrackingNumber = %s
+        """
+        cursor.execute(update_document_query, (tracking_number,))
+
+        # Insert a new transaction record in TRANSACTIONS
+        insert_transaction_query = """
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, CompletedDate,
+                ProcessDate, Status, TransactionType, Comments, TrackingNumber
+            ) VALUES (
+                %s, 
+                (SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s), 
+                %s, %s, %s, %s, %s, %s, %s
+            )
+        """
+        cursor.execute(insert_transaction_query, (
+            session.get('office_id'),  # Assuming 'office_id' is also stored in session
+            tracking_number,
+            user_id,
+            current_date,
+            current_date,
+            'Completed',
+            'Complete',
+            comments,
+            tracking_number  # Insert the tracking number into the transaction
+        ))
+
+        # Commit the transaction
+        conn.commit()
+        flash("Document marked as complete successfully.")
+    except Exception as e:
+        conn.rollback()
+        flash(f"An error occurred: {e}")
+    finally:
+        # Close the database connection
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('legal_encoded'))  # Redirect to documents page
+
+
+# "TRACK DOCUMENTS" IN LEGAL OFFICE /  track_legal_documents.html
 @app.route('/track_legal_documents')
 @login_required
 def track_legal_documents():
@@ -2053,7 +3376,7 @@ def track_legal_documents():
 #-----END OF LEGAL DASHBOARD-----#
 
 #-----SDS OFFICE DASHBOARD-----#
-# SDS DASHBOARD /  _sds_dashboard.html
+# "CREATE DOCUMENTS" FOR SDS OFFCICE /  _sds_dashboard.html
 @app.route('/_sds_dashboard')
 @login_required
 def _sds_dashboard():
@@ -2097,6 +3420,7 @@ def _sds_dashboard():
     # Pass document types, offices, and user to the template
     return render_template('sds_office/_sds_dashboard.html', user=user, offices=offices, document_type=document_type)
 
+# "MY DOCUMENTS" FOR SDS OFFCIE / sds_office.html
 @app.route('/sds_encoded', methods=['GET'])
 @login_required
 def sds_encoded():
@@ -2158,6 +3482,7 @@ def sds_encoded():
         cursor.close()
         conn.close()
 
+# "DOCUMENT FOR RECEIVE" FOR SDS OFFICE / sds_office.html
 @app.route('/sds_documents')
 @login_required
 def sds_documents():
@@ -2217,7 +3542,180 @@ def sds_documents():
         cursor.close()
         conn.close()
 
-# TRACK ALL DOCUMENTS IN SDS OFFICE / track_sds_documents.html
+# "RECEIVE" ACTION BUTTON FOR SDS OFFICE
+@app.route('/sds_receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def handle_sds_receive_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Update the status of the document to 'Received' and set DateReceived
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = %s, DateReceived = NOW()
+            WHERE DocNo = %s AND OfficeID = %s
+        """, ('Received', doc_no, session.get('office_id')))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Document not found or already received."}), 404
+
+        # 2. Fetch the TrackingNumber for this document
+        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
+        tracking_number_result = cursor.fetchone()
+        tracking_number = tracking_number_result[0] if tracking_number_result else None
+
+        # 3. Insert the transaction into the TRANSACTIONS table
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType, TrackingNumber
+            )
+            VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+        """, (
+            session.get('office_id'),  # Office receiving the document
+            doc_no,                    # Document number being received
+            session.get('user_id'),    # The user performing the action
+            'Received',                # Status of the transaction
+            'Receive',                 # Type of transaction
+            tracking_number            # TrackingNumber associated with this document
+        ))
+
+        conn.commit()
+        return redirect(url_for('sds_documents'))
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+# "FORWARD" ACTION BUTTON FOR SDS OFFICE
+@app.route('/sds_forward', methods=['POST'])
+def sds_forward():
+    tracking_number = request.form.get('tracking_number')
+    comments = request.form.get('comments')
+    forwarded_to_office_id = request.form.get('forwarded_to_office_id')  # Capture selected office ID
+
+    try:
+        # Connect to the database
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+
+        # Verify that the document exists
+        cursor.execute("SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s", (tracking_number,))
+        document = cursor.fetchone()
+
+        if not document:
+            flash(f'Document with tracking number {tracking_number} does not exist.', 'error')
+            return redirect(url_for('encoded_documents'))
+
+        # Retrieve the document number (DocNo)
+        doc_no = document[0]
+
+        # Update document status to 'Forwarded'
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = 'Forwarded'
+            WHERE TrackingNumber = %s
+        """, (tracking_number,))
+
+        # Insert a new transaction record with dynamic ForwardedToOfficeID
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, ForwardDate, Status, TransactionType, Comments, ForwardedToOfficeID, TrackingNumber
+            ) VALUES (%s, %s, %s, NOW(), 'Forwarded', 'Forward', %s, %s, %s)
+        """, (
+            session.get('office_id'),   # Office initiating the forward
+            doc_no,                     # Document number
+            session.get('user_id'),     # User performing the action
+            comments,                   # Comments from the form
+            forwarded_to_office_id,     # Selected office from dropdown
+            tracking_number             # Tracking number
+        ))
+
+        conn.commit()
+        flash(f'Document {tracking_number} forwarded successfully!', 'success')
+
+    except mysql.connector.Error as err:
+        conn.rollback()
+        print(f"Database error: {err}")
+        flash(f'Error forwarding document: {err}', 'error')
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+    return redirect(url_for('sds_encoded'))
+
+
+# "COMPLETE" ACTION BUTTON FOR SDS OFFICE
+@app.route('/sds_complete', methods=['POST'])
+def sds_complete():
+    # Retrieve user ID from session
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("You must be logged in to complete a document.")
+        return redirect(url_for('login'))  # Redirect to login if not logged in
+
+    # Get data from the form
+    tracking_number = request.form.get('tracking_number')
+    comments = request.form.get('comments', '')
+    current_date = datetime.now()
+
+    # Connect to the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Update the document status to 'Complete'
+        update_document_query = """
+            UPDATE DOCUMENTS
+            SET Status = 'Completed'
+            WHERE TrackingNumber = %s
+        """
+        cursor.execute(update_document_query, (tracking_number,))
+
+        # Insert a new transaction record in TRANSACTIONS
+        insert_transaction_query = """
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, CompletedDate,
+                ProcessDate, Status, TransactionType, Comments, TrackingNumber
+            ) VALUES (
+                %s, 
+                (SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s), 
+                %s, %s, %s, %s, %s, %s, %s
+            )
+        """
+        cursor.execute(insert_transaction_query, (
+            session.get('office_id'),  # Assuming 'office_id' is also stored in session
+            tracking_number,
+            user_id,
+            current_date,
+            current_date,
+            'Completed',
+            'Complete',
+            comments,
+            tracking_number  # Insert the tracking number into the transaction
+        ))
+
+        # Commit the transaction
+        conn.commit()
+        flash("Document marked as complete successfully.")
+    except Exception as e:
+        conn.rollback()
+        flash(f"An error occurred: {e}")
+    finally:
+        # Close the database connection
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('sds_encoded'))  # Redirect to documents page
+
+# "TRACK DOCUMENTS" IN SDS OFFICE / track_sds_documents.html
 @app.route('/track_sds_documents')
 @login_required
 def track_sds_documents():
@@ -2272,7 +3770,7 @@ def track_sds_documents():
 #-----END OF SDS DASHBOARD-----#
 
 #-----SUPPLY OFFICE DASHBOARD-----#
-# SUPPLY DASHBOARD /  _supply_dashboard.html
+# "CREATE DOCUMENTS" FOR SUPPLY OFFICE /  _supply_dashboard.html
 @app.route('/_supply_dashboard')
 @login_required
 def _supply_dashboard():
@@ -2316,6 +3814,7 @@ def _supply_dashboard():
     # Pass document types, offices, and user to the template
     return render_template('supply_office/_supply_dashboard.html', user=user, offices=offices, document_type=document_type)
 
+# "MY DOCUMENTS" FOR SUPPLOY OFFICE / supply_encoded.html
 @app.route('/supply_encoded', methods=['GET'])
 @login_required
 def supply_encoded():
@@ -2377,6 +3876,7 @@ def supply_encoded():
         cursor.close()
         conn.close()
 
+# "DOCUMENT FOR RECEIVE" FOR SUPPLY OFFICE / supply_documents.html
 @app.route('/supply_documents')
 @login_required
 def supply_documents():
@@ -2436,7 +3936,181 @@ def supply_documents():
         cursor.close()
         conn.close()
 
-# TRACK ALL DOCUMENTS IN SUPPLY OFFICE / track_supply_documents.html
+# "RECEIVE" ACTION BUTTON FOR SUPPLY OFFICE
+@app.route('/supply_receive_document/<int:doc_no>', methods=['POST'])
+@login_required
+def handle_supply_receive_document(doc_no):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Update the status of the document to 'Received' and set DateReceived
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = %s, DateReceived = NOW()
+            WHERE DocNo = %s AND OfficeID = %s
+        """, ('Received', doc_no, session.get('office_id')))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Document not found or already received."}), 404
+
+        # 2. Fetch the TrackingNumber for this document
+        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
+        tracking_number_result = cursor.fetchone()
+        tracking_number = tracking_number_result[0] if tracking_number_result else None
+
+        # 3. Insert the transaction into the TRANSACTIONS table
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, 
+                ReceivedDate, Status, TransactionType, TrackingNumber
+            )
+            VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+        """, (
+            session.get('office_id'),  # Office receiving the document
+            doc_no,                    # Document number being received
+            session.get('user_id'),    # The user performing the action
+            'Received',                # Status of the transaction
+            'Receive',                 # Type of transaction
+            tracking_number            # TrackingNumber associated with this document
+        ))
+
+        conn.commit()
+        return redirect(url_for('supply_documents'))
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+# "FORWARD" ACTION BUTTON FOR SUPPLY OFFICE
+@app.route('/supply_forward', methods=['POST'])
+def supply_forward():
+    tracking_number = request.form.get('tracking_number')
+    comments = request.form.get('comments')
+    forwarded_to_office_id = request.form.get('forwarded_to_office_id')  # Capture selected office ID
+
+    try:
+        # Connect to the database
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+
+        # Verify that the document exists
+        cursor.execute("SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s", (tracking_number,))
+        document = cursor.fetchone()
+
+        if not document:
+            flash(f'Document with tracking number {tracking_number} does not exist.', 'error')
+            return redirect(url_for('encoded_documents'))
+
+        # Retrieve the document number (DocNo)
+        doc_no = document[0]
+
+        # Update document status to 'Forwarded'
+        cursor.execute("""
+            UPDATE DOCUMENTS
+            SET Status = 'Forwarded'
+            WHERE TrackingNumber = %s
+        """, (tracking_number,))
+
+        # Insert a new transaction record with dynamic ForwardedToOfficeID
+        cursor.execute("""
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, ForwardDate, Status, TransactionType, Comments, ForwardedToOfficeID, TrackingNumber
+            ) VALUES (%s, %s, %s, NOW(), 'Forwarded', 'Forward', %s, %s, %s)
+        """, (
+            session.get('office_id'),   # Office initiating the forward
+            doc_no,                     # Document number
+            session.get('user_id'),     # User performing the action
+            comments,                   # Comments from the form
+            forwarded_to_office_id,     # Selected office from dropdown
+            tracking_number             # Tracking number
+        ))
+
+        conn.commit()
+        flash(f'Document {tracking_number} forwarded successfully!', 'success')
+
+    except mysql.connector.Error as err:
+        conn.rollback()
+        print(f"Database error: {err}")
+        flash(f'Error forwarding document: {err}', 'error')
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+    return redirect(url_for('supply_encoded'))
+
+
+# "COMPLETE" ACTION BUTTON FOR SUPPLY OFFICE
+@app.route('/supply_complete', methods=['POST'])
+def supply_complete():
+    # Retrieve user ID from session
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("You must be logged in to complete a document.")
+        return redirect(url_for('login'))  # Redirect to login if not logged in
+
+    # Get data from the form
+    tracking_number = request.form.get('tracking_number')
+    comments = request.form.get('comments', '')
+    current_date = datetime.now()
+
+    # Connect to the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Update the document status to 'Complete'
+        update_document_query = """
+            UPDATE DOCUMENTS
+            SET Status = 'Completed'
+            WHERE TrackingNumber = %s
+        """
+        cursor.execute(update_document_query, (tracking_number,))
+
+        # Insert a new transaction record in TRANSACTIONS
+        insert_transaction_query = """
+            INSERT INTO TRANSACTIONS (
+                OfficeID, DocNo, UserID, CompletedDate,
+                ProcessDate, Status, TransactionType, Comments, TrackingNumber
+            ) VALUES (
+                %s, 
+                (SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s), 
+                %s, %s, %s, %s, %s, %s, %s
+            )
+        """
+        cursor.execute(insert_transaction_query, (
+            session.get('office_id'),  # Assuming 'office_id' is also stored in session
+            tracking_number,
+            user_id,
+            current_date,
+            current_date,
+            'Completed',
+            'Complete',
+            comments,
+            tracking_number  # Insert the tracking number into the transaction
+        ))
+
+        # Commit the transaction
+        conn.commit()
+        flash("Document marked as complete successfully.")
+    except Exception as e:
+        conn.rollback()
+        flash(f"An error occurred: {e}")
+    finally:
+        # Close the database connection
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('supply_encoded'))  # Redirect to documents page
+
+
+# "TRACK DOCUMENTS" IN SUPPLY OFFICE / track_supply_documents.html
 @app.route('/track_supply_documents')
 @login_required
 def track_supply_documents():
@@ -2644,24 +4318,81 @@ def generate_tracking_number():
     
     return tracking_number
 
-def get_forwarded_documents(offset, limit):
-    # Example query to get forwarded documents (adjust according to your schema)
-    return db.session.query(Document).filter(Document.Status == 'Forwarded') \
-        .order_by(Document.DateEncoded.desc()).offset(offset).limit(limit).all()
+# def get_forwarded_documents(offset, limit):
+#     # Example query to get forwarded documents (adjust according to your schema)
+#     return db.session.query(Document).filter(Document.Status == 'Forwarded') \
+#         .order_by(Document.DateEncoded.desc()).offset(offset).limit(limit).all()
 
 
 #EDIT ACTION BUTTON
-@app.route('/edit_document/<int:doc_no>', methods=['GET', 'POST'])
+@app.route('/edit_document/<string:doc_no>', methods=['GET', 'POST'])
 def edit_document(doc_no):
-    # Your code to handle the document editing
-    pass
+    # Establish a new database connection for this route
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Fetch the document details
+    cursor.execute('SELECT * FROM DOCUMENTS WHERE TrackingNumber = %s', (doc_no,))
+    document = cursor.fetchone()
+
+    # Check if the document status is 'Received'
+    is_received = document['Status'] == 'Received' if document else False
+
+    if request.method == 'POST':
+        # Ensure the document is not already received before processing the edit
+        if is_received:
+            flash('Document cannot be edited because it has already been received.', 'danger')
+            return redirect(url_for('document_tracking'))
+
+        new_doc_type_id = request.form['doctype']  # Ensure this matches the name in the form
+        new_doc_details = request.form['doc_details']
+        new_doc_purpose = request.form['doc_purpose']
+
+        # Update the document in the database
+        cursor.execute(''' 
+            UPDATE DOCUMENTS 
+            SET DocTypeID = %s, DocDetails = %s, DocPurpose = %s
+            WHERE TrackingNumber = %s
+        ''', (new_doc_type_id, new_doc_details, new_doc_purpose, doc_no))
+
+        conn.commit()
+        flash('Document updated successfully!', 'success')
+        cursor.close()
+        conn.close()
+        return redirect(url_for('document_tracking'))
+
+    # Fetch document types for the dropdown
+    cursor.execute("SELECT DocTypeID, DocTypeName FROM DOCUMENT_TYPE")
+    document_types = cursor.fetchall()
+
+    # Close the cursor and connection before rendering
+    cursor.close()
+    conn.close()
+
+    return render_template('document_tracking.html', document=document, document_types=document_types, is_received=is_received)
+
 
 #VIEW ACTION BUTTON
-@app.route('/view_document/<int:doc_no>', methods=['GET'])
+@app.route('/view_document/<string:doc_no>')
 def view_document(doc_no):
-    # Your code to handle viewing the document
-    pass
+    # Fetch the document details using the Tracking Number
+    document = db.execute('''
+        SELECT d.TrackingNumber, d.DocDetails, d.DocPurpose, d.DateEncoded, d.DateReceived,
+               d.Status, dt.DocTypeName, s.SchoolName, u.Firstname, u.Lastname
+        FROM DOCUMENTS d
+        JOIN DOCUMENT_TYPE dt ON d.DocTypeID = dt.DocTypeID
+        JOIN SCHOOLS s ON d.SchoolID = s.SchoolID
+        JOIN USERS u ON d.UserID = u.UserID
+        WHERE d.TrackingNumber = %s
+    ''', (doc_no,)).fetchone()
 
+    # Check if document exists
+    if document is None:
+        flash("Document not found!", "danger")
+        return redirect(url_for('document_tracking'))
+
+    # Render the view_document.html template to display the document tracking details
+    return render_template('view_document.html', document=document)
 
 #DELETE ACTION BUTTON
 @app.route('/delete_document/<string:doc_no>', methods=['POST'])
@@ -2673,7 +4404,7 @@ def delete_document(doc_no):
         cursor.execute("SELECT Status FROM DOCUMENTS WHERE TrackingNumber = %s", (doc_no,))
         document = cursor.fetchone()
 
-        if document and document[0] == 'received':
+        if document and document[0] == 'Received':
             flash('Error: Document cannot be deleted because it has already been received.', 'danger')
             return redirect(url_for('document_tracking'))  # Redirect after failed deletion
 
@@ -2701,17 +4432,17 @@ def receive_document(doc_no):
     tracking_number = request.form.get('tracking_number')
 
     try:
-        # Update the document status to 'received'
+        # Update the document status to 'Received'
         cursor.execute("""
             UPDATE DOCUMENTS 
-            SET Status = 'received' 
+            SET Status = 'Received' 
             WHERE DocNo = %s
         """, (doc_no,))
         
         conn.commit()  # Commit the changes
 
         # Flash a message to indicate success
-        flash(f'Document {tracking_number} received successfully!', 'success')
+        flash(f'Document {tracking_number} Received Successfully!', 'success')
 
         # Redirect to receive documents page
         return redirect(url_for('receive_documents'))
@@ -2727,6 +4458,18 @@ def receive_document(doc_no):
 
     # This return statement is to satisfy the function requirements, though it should not be reached
     return redirect(url_for('receive_documents'))  # Ensure this is the last line
+
+def get_current_user_id():
+    # Logic to retrieve the current user's ID (e.g., from session)
+    return 1  # Placeholder
+
+def get_current_office_id():
+    # Logic to retrieve the current office's ID (e.g., from session or user data)
+    return 1  # Placeholder
+
+def get_doc_no_from_tracking_number(tracking_number):
+    # Logic to retrieve the DocNo from the tracking number
+    return 1  # Placeholder, implement your logic to get DocNo
 
 # LOG OUT ROUTE
 @app.route('/logout')

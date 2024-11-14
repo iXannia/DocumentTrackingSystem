@@ -136,7 +136,7 @@
                                         <div class="action-buttons">
                                             <form action="{{ url_for('receive_document', doc_no=document.DocNo) }}" method="POST">
                                                 <input type="hidden" name="tracking_number" value="{{ document.TrackingNumber }}">
-                                                <button type="submit" class="receive" onclick="return confirm('Are you sure you want to receive this document?');">Receive</button>
+                                                <button type="submit" class="Receive" onclick="return confirm('Are you sure you want to receive this document?');">Receive</button>
                                             </form>
                                         </div>
                                     </td>

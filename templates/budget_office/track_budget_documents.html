@@ -20,7 +20,7 @@
             <li>
                 <a href="{{ url_for('_budget_dashboard') }}" aria-label="Dashboard Home">
                     <i class='bx bxs-dashboard'></i>
-                    <span class="text">Dashboard</span>
+                    <span class="text">Create Documents</span>
                 </a>
             </li>
             <li>
@@ -95,9 +95,7 @@
                                 <th>Details</th>
                                 <th>Purpose</th>
                                 <th>Date Encoded</th>
-                                <th>Date Received</th>
                                 <th>Status</th>
-                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -110,7 +108,7 @@
                                 <td>{{ document.DocPurpose }}</td>
                                 <td>{{ document.DateEncoded }}</td>
                                 <td>{{ document.DateReceived }}</td>
-                                <td>{{ document.Status }}</td>
+                                <td><span class="status {{ document.Status|lower }}">{{ document.Status }}</span></td>
                             </tr>
                             {% else %}
                             <tr>

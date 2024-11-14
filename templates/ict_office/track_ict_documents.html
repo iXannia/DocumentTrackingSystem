@@ -18,36 +18,24 @@
         </a>
         <ul class="side-menu top">
             <li>
-                <a href="{{ url_for('_ict_dashboard') }}" aria-label="Dashboard Home">
+                <a href="{{ url_for('_ict_dashboard') }}">
                     <i class='bx bxs-dashboard'></i>
-                    <span class="text">Dashboard</span>
+                    <span class="text">Create Documents</span>
                 </a>
             </li>
             <li>
-                <a href="ict_encoded" aria-label="Encoded Document">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Encoded Documents</span>
-                </a>
-            </li>
-            <li>
-                <a href="ict_documents" aria-label="Document for Receive">
+                <a href="{{ url_for('ict_documents') }}" aria-label="Document for Receive">
                     <i class='bx bxs-file'></i>
                     <span class="text">Document for Receive</span>
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="{{ url_for('ict_encoded') }}" aria-label="Encoded Document">
                     <i class='bx bxs-file'></i>
                     <span class="text">My Documents</span>
                 </a>
             </li>
-            <li>
-                <a href="#">
-                    <i class='bx bxs-file'></i>
-                    <span class="text">Document for Release</span>
-                </a>
-            </li>
-            <li class="active">
+            <li  class="active">
                 <a href="{{ url_for('track_ict_documents') }}">
                     <i class='bx bxs-file'></i>
                     <span class="text">Track Documents</span>
