@@ -13,7 +13,6 @@
     <!-- SIDEBAR -->
     <section id="sidebar">
         <a href="_records_dashboard" class="brand" aria-label="Home">
-            <i class='bx bxs-smile'></i>
             <span class="text">DepEd Cebu City - Records Office</span>
         </a>
         <ul class="side-menu top">
@@ -67,14 +66,6 @@
 
     <!-- CONTENT -->
     <section id="content">
-        <!-- NAVBAR -->
-        <nav>
-            <form action="#"></form>
-            <a href="#" class="profile">
-                <img src="img/people.png" alt="User Profile Image">
-            </a>
-        </nav>
-        <!-- NAVBAR -->
 
         <!-- MAIN -->
         <main>
@@ -87,7 +78,7 @@
                         </li>
                         <li><i class='bx bx-chevron-right'></i></li>
                         <li>
-                            <a class="active" href="{{ url_for('_records_dashboard') }}">Received Documents</a>
+                            <a class="active" href="{{ url_for('receive_documents') }}">Received Documents</a>
                         </li>
                     </ul>
                 </div>
@@ -97,6 +88,10 @@
                 <div class="order">
                     <div class="head">
                         <h3>Documents</h3>
+                        <!-- Search Bar -->
+                        <div class="search-container">
+                            <input type="text" id="searchBar" placeholder="Search..." onkeyup="searchDocuments()">
+                        </div>
                     </div>
                     <table>
                         <thead>
@@ -108,6 +103,8 @@
                                 <th>Purpose</th>
                                 <th>School/Office</th>
                                 <th>Date Encoded</th>
+                                <th>Forwarded Date</th> <!-- Added column for Forwarded Date -->
+                                <th>Comments</th> <!-- Added column for Comments -->
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
@@ -131,6 +128,8 @@
                                         {% endif %}
                                     </td>
                                     <td>{{ document.DateEncoded }}</td>
+                                    <td>{{ document.ForwardDate if document.ForwardDate else 'N/A' }}</td> <!-- Display ForwardDate -->
+                                    <td>{{ document.Comments if document.Comments else 'N/A' }}</td> <!-- Display Comments -->
                                     <td><span class="status {{ document.Status|lower }}">{{ document.Status }}</span></td>
                                     <td>
                                         <div class="action-buttons">
@@ -181,7 +180,36 @@
         <!-- MAIN -->
     </section>
     <!-- CONTENT -->
+    <script>
+        function searchDocuments() {
+            var input, filter, table, tr, td, i, txtValue;
+            input = document.getElementById('searchBar');
+            filter = input.value.toUpperCase();
+            table = document.querySelector("table");
+            tr = table.getElementsByTagName("tr");
 
+            for (i = 1; i < tr.length; i++) {  // Skip the header row
+                td = tr[i].getElementsByTagName("td");
+                let found = false;
+
+                for (let j = 0; j < td.length; j++) {
+                    if (td[j]) {
+                        txtValue = td[j].textContent || td[j].innerText;
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (found) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    </script>
     <script src="../static/script.js"></script>
 </body>
 </html>

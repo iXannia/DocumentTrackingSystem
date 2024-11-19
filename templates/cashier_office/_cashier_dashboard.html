@@ -10,7 +10,6 @@
 <body>
     <section id="sidebar">
         <a href="{{ url_for('_cashier_dashboard') }}" class="brand">
-            <i class='bx bxs-smile'></i>
             <span class="text">DepEd Cebu City - Cashier Office</span>
         </a>
         <ul class="side-menu top">
@@ -27,7 +26,7 @@
                 </a>
             </li>
             <li>
-                <a href="{{ url_for('cashier_encoded') }}" aria-label="Encoded Document">
+                <a href="{{ url_for('cashier_encoded') }}">
                     <i class='bx bxs-file'></i>
                     <span class="text">My Documents</span>
                 </a>
@@ -50,13 +49,6 @@
     </section>
 
     <section id="content">
-        <!-- <nav>
-            <form action="#"></form>
-            <a href="#" class="profile">
-                <img src="img/people.png" alt="User Profile">
-            </a>
-        </nav> -->
-
         <main>
             <div class="head-title">
                 <div class="left">
@@ -65,7 +57,6 @@
                         <li>
                             <a href="{{ url_for('_cashier_dashboard') }}">Dashboard</a>
                         </li>
-                        <li><i class='bx bx-chevron-right'></i></li>
                     </ul>
                 </div>
             </div>

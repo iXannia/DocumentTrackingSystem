@@ -13,7 +13,6 @@
     <!-- SIDEBAR -->
     <section id="sidebar">
         <a href="{{ url_for('_budget_dashboard') }}" class="brand">
-            <i class='bx bxs-smile'></i>
             <span class="text">DepEd Cebu City - Budget Office</span>
         </a>
         <ul class="side-menu top">
@@ -26,7 +25,7 @@
             <li class="active">
                 <a href="{{ url_for('budget_documents') }}">
                     <i class='bx bxs-file'></i>
-                    <span class="text">Documents for Receive</span>
+                    <span class="text">Document for Receive</span>
                 </a>
             </li>
             <li>
@@ -55,20 +54,11 @@
 
     <!-- CONTENT -->
     <section id="content">
-        <!-- NAVBAR -->
-        <nav>
-            <form action="#"></form>
-            <a href="#" class="profile">
-                <img src="img/people.png" alt="User Profile Image">
-            </a>
-        </nav>
-        <!-- NAVBAR -->
-
         <!-- MAIN -->
         <main>
             <div class="head-title">
                 <div class="left">
-                    <h1>Documents for Receive</h1>
+                    <h1>All Documents</h1>
                     <ul class="breadcrumb">
                         <li>
                             <a class="active" href="{{ url_for('_budget_dashboard') }}">Dashboard</a>
@@ -85,6 +75,10 @@
                 <div class="order">
                     <div class="head">
                         <h3>Documents</h3>
+                        <!-- Search Bar -->
+                        <div class="search-container">
+                            <input type="text" id="searchBar" placeholder="Search..." onkeyup="searchDocuments()">
+                        </div>
                     </div>
                     <table>
                         <thead>
@@ -96,10 +90,9 @@
                                 <th>Purpose</th>
                                 <th>School/Office</th>
                                 <th>Date Encoded</th>
-                                <th>Date Received</th>
+                                <th>Forwarded Date</th>
+                                <th>Comments</th>  <!-- New column for Comments -->
                                 <th>Status</th>
-                                <th>Forwarded To Office</th>
-                                <th>Comments</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -108,7 +101,7 @@
                                 {% for document in documents %}
                                 <tr>
                                     <td>{{ document.TrackingNumber }}</td>
-                                    <td>{{ document.Firstname }} {{ document.Lastname }}</td>
+                                    <td>{{ document.Lastname }}</td>
                                     <td>{{ document.DocTypeName }}</td>
                                     <td>{{ document.DocDetails }}</td>
                                     <td>{{ document.DocPurpose }}</td>
@@ -122,30 +115,25 @@
                                         {% endif %}
                                     </td>
                                     <td>{{ document.DateEncoded }}</td>
-                                    <td>{{ document.DateReceived }}</td>
+                                    <td>{{ document.ForwardDate if document.ForwardDate else 'N/A' }}</td> <!-- Display ForwardDate -->
+                                    <td>{{ document.Comments if document.Comments else 'N/A' }}</td>  <!-- Display Comments if available -->
                                     <td><span class="status {{ document.Status|lower }}">{{ document.Status }}</span></td>
                                     <td>
-                                        {% if document.ForwardedToOfficeID %}
-                                            {{ document.ForwardedToOfficeID }}  <!-- You can join it with the office name if needed -->
-                                        {% else %}
-                                            N/A
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ document.Comments }}</td> <!-- Displaying Comments -->
-                                    <td>
-                                        <form action="{{ url_for('handle_budget_receive_document', doc_no=document.DocNo) }}" method="POST">
-                                            <input type="hidden" name="tracking_number" value="{{ document.TrackingNumber }}">
-                                            <button type="submit" class="receive" onclick="return confirm('Are you sure you want to receive this document?');">Receive</button>
-                                        </form>
+                                        <div class="action-buttons">
+                                            <form action="{{ url_for('handle_budget_receive_document', doc_no=document.DocNo) }}" method="POST">
+                                                <input type="hidden" name="tracking_number" value="{{ document.TrackingNumber }}">
+                                                <button type="submit" class="Receive" onclick="return confirm('Are you sure you want to receive this document?');">Receive</button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
                             {% else %}
                                 <tr>
-                                    <td colspan="11">No documents found.</td>
+                                    <td colspan="10">No documents found.</td>
                                 </tr>
                             {% endif %}
-                        </tbody>
+                        </tbody>                        
                     </table>
                 </div>
             </div>
@@ -154,25 +142,61 @@
             <div class="pagination">
                 {% if total_pages > 1 %}
                     <ul>
+                        <!-- Previous button -->
                         <li class="{% if current_page == 1 %}disabled{% endif %}">
                             <a href="?page={{ current_page - 1 }}">Prev</a>
                         </li>
 
+                        <!-- Page numbers -->
                         {% for p in range(1, total_pages + 1) %}
                             <li class="{% if current_page == p %}active{% endif %}">
                                 <a href="?page={{ p }}">{{ p }}</a>
                             </li>
                         {% endfor %}
 
+                        <!-- Next button -->
                         <li class="{% if current_page == total_pages %}disabled{% endif %}">
                             <a href="?page={{ current_page + 1 }}">Next</a>
                         </li>
                     </ul>
                 {% endif %}
             </div>
-        </main>
-    </section>
+            <!-- Pagination End -->
 
+        </main>
+        <!-- MAIN -->
+    </section>
+    <!-- CONTENT -->
+    <script>
+        function searchDocuments() {
+            var input, filter, table, tr, td, i, txtValue;
+            input = document.getElementById('searchBar');
+            filter = input.value.toUpperCase();
+            table = document.querySelector("table");
+            tr = table.getElementsByTagName("tr");
+
+            for (i = 1; i < tr.length; i++) {  // Skip the header row
+                td = tr[i].getElementsByTagName("td");
+                let found = false;
+
+                for (let j = 0; j < td.length; j++) {
+                    if (td[j]) {
+                        txtValue = td[j].textContent || td[j].innerText;
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (found) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    </script>
     <script src="../static/script.js"></script>
 </body>
 </html>

@@ -13,7 +13,6 @@
     <!-- SIDEBAR -->
     <section id="sidebar">
         <a href="{{ url_for('_records_dashboard') }}" class="brand">
-            <i class='bx bxs-smile'></i>
             <span class="text">DepEd Cebu City - Records Office</span>
         </a>
         <ul class="side-menu top">
@@ -67,25 +66,15 @@
 
     <!-- CONTENT -->
     <section id="content">
-        <!-- NAVBAR -->
-        <nav>
-            <form action="#"></form>
-            <a href="#" class="profile">
-                <img src="img/people.png" alt="User Profile">
-            </a>
-        </nav>
-        <!-- NAVBAR -->
-
         <!-- MAIN -->
         <main>
             <div class="head-title">
                 <div class="left">
-                    <h1>[RECORDS] Hi! {{ user.Firstname }} {{ user.Middlename[0] if user.Middlename else '' }}. {{ user.Lastname }}</h1>
+                    <h1>Welcome to {{ user.Firstname|capitalize }}s Office!</h1>
                     <ul class="breadcrumb">
                         <li>
-                            <a href="{{ url_for('_records_dashboard') }}">Dashboard</a>
+                            <a href="{{ url_for('_legal_dashboard') }}">Dashboard</a>
                         </li>
-                        <li><i class='bx bx-chevron-right'></i></li>
                     </ul>
                 </div>
             </div>

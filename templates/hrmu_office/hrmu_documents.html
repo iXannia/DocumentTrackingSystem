@@ -13,7 +13,6 @@
     <!-- SIDEBAR -->
     <section id="sidebar">
         <a href="{{ url_for('_hrmu_dashboard') }}" class="brand">
-            <i class='bx bxs-smile'></i>
             <span class="text">DepEd Cebu City - HRMU Office</span>
         </a>
         <ul class="side-menu top">
@@ -24,13 +23,13 @@
                 </a>
             </li>
             <li class="active">
-                <a href="{{ url_for('hrmu_documents') }}" aria-label="Document for Receive">
+                <a href="{{ url_for('hrmu_documents') }}">
                     <i class='bx bxs-file'></i>
                     <span class="text">Document for Receive</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url_for('hrmu_encoded') }}" aria-label="Encoded Document">
+                <a href="{{ url_for('hrmu_encoded') }}">
                     <i class='bx bxs-file'></i>
                     <span class="text">My Documents</span>
                 </a>
@@ -51,28 +50,10 @@
             </li>
         </ul>
     </section>
-        <ul class="side-menu">
-            <li>
-                <a href="login" class="logout" aria-label="Logout">
-                    <i class='bx bxs-log-out-circle'></i>
-                    <span class="text">Logout</span>
-                </a>
-            </li>
-        </ul>
-    </section>
     <!-- SIDEBAR -->
 
     <!-- CONTENT -->
     <section id="content">
-        <!-- NAVBAR -->
-        <nav>
-            <form action="#"></form>
-            <a href="#" class="profile">
-                <img src="img/people.png" alt="User Profile Image">
-            </a>
-        </nav>
-        <!-- NAVBAR -->
-
         <!-- MAIN -->
         <main>
             <div class="head-title">
@@ -80,11 +61,11 @@
                     <h1>Forwarded Documents</h1>
                     <ul class="breadcrumb">
                         <li>
-                            <a class="active" href="{{ url_for('_cashier_dashboard') }}">Dashboard</a>
+                            <a class="active" href="{{ url_for('_hrmu_dashboard') }}">Dashboard</a>
                         </li>
                         <li><i class='bx bx-chevron-right'></i></li>
                         <li>
-                            <a class="active" href="{{ url_for('cashier_forwarded_documents') }}">Forwarded Documents</a>
+                            <a class="active" href="{{ url_for('hrmu_documents') }}">Forwarded Documents</a>
                         </li>
                     </ul>
                 </div>
@@ -94,6 +75,10 @@
                 <div class="order">
                     <div class="head">
                         <h3>Documents</h3>
+                        <!-- Search Bar -->
+                        <div class="search-container">
+                            <input type="text" id="searchBar" placeholder="Search..." onkeyup="searchDocuments()">
+                        </div>
                     </div>
                     <table>
                         <thead>
@@ -106,7 +91,6 @@
                                 <th>Purpose</th>
                                 <th>School/Office</th>
                                 <th>Date Encoded</th>
-                                <th>Date Received</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
@@ -117,7 +101,7 @@
                                 <tr>
                                     <td>{{ document.DocNo }}</td>
                                     <td>{{ document.TrackingNumber }}</td>
-                                    <td>{{ document.Firstname }} {{ document.Lastname }}</td>
+                                    <td>{{ document.Lastname }}</td>
                                     <td>{{ document.DocTypeName }}</td>
                                     <td>{{ document.DocDetails }}</td>
                                     <td>{{ document.DocPurpose }}</td>
@@ -131,7 +115,6 @@
                                         {% endif %}
                                     </td>
                                     <td>{{ document.DateEncoded }}</td>
-                                    <td>{{ document.DateReceived }}</td>
                                     <td><span class="status {{ document.Status|lower }}">{{ document.Status }}</span></td>
                                     <td>
                                         <div class="action-buttons">
@@ -182,7 +165,36 @@
         <!-- MAIN -->
     </section>
     <!-- CONTENT -->
+    <script>
+        function searchDocuments() {
+            var input, filter, table, tr, td, i, txtValue;
+            input = document.getElementById('searchBar');
+            filter = input.value.toUpperCase();
+            table = document.querySelector("table");
+            tr = table.getElementsByTagName("tr");
 
+            for (i = 1; i < tr.length; i++) {  // Skip the header row
+                td = tr[i].getElementsByTagName("td");
+                let found = false;
+
+                for (let j = 0; j < td.length; j++) {
+                    if (td[j]) {
+                        txtValue = td[j].textContent || td[j].innerText;
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (found) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    </script>
     <script src="../static/script.js"></script>
 </body>
 </html>

@@ -13,7 +13,6 @@
     <!-- SIDEBAR -->
     <section id="sidebar">
         <a href="{{ url_for('_admin_dashboard') }}" class="brand" aria-label="Home">
-            <i class='bx bxs-smile'></i>
             <span class="text">DepEd Cebu City - Admin Office</span>
         </a>
         <ul class="side-menu top">
@@ -55,15 +54,6 @@
 
     <!-- CONTENT -->
     <section id="content">
-        <!-- NAVBAR -->
-        <nav>
-            <form action="#"></form>
-            <a href="#" class="profile">
-                <img src="img/people.png" alt="User Profile Image">
-            </a>
-        </nav>
-        <!-- NAVBAR -->
-
         <!-- MAIN -->
         <main>
             <div class="head-title">
@@ -84,7 +74,11 @@
             <div class="table-data">
                 <div class="order">
                     <div class="head">
-                        <h1>Tracking Documents - Admin Office</h1>
+                        <h3>Tracking Documents - Admin Office</h3>
+                        <!-- Search Bar -->
+                        <div class="search-container">
+                            <input type="text" id="searchBar" placeholder="Search..." onkeyup="searchDocuments()">
+                        </div>
                     </div>
                     <table>
                         <thead>
@@ -103,7 +97,7 @@
                             {% for document in documents %}
                             <tr>
                                 <td>{{ document.TrackingNumber }}</td>
-                                <td>{{ document.Firstname }} {{ document.Lastname }}</td>
+                                <td>{{ document.Lastname }}</td>
                                 <td>{{ document.DocTypeName }}</td>
                                 <td>{{ document.DocDetails }}</td>
                                 <td>{{ document.DocPurpose }}</td>
@@ -149,7 +143,36 @@
         <!-- MAIN -->
     </section>
     <!-- CONTENT -->
+    <script>
+        function searchDocuments() {
+            var input, filter, table, tr, td, i, txtValue;
+            input = document.getElementById('searchBar');
+            filter = input.value.toUpperCase();
+            table = document.querySelector("table");
+            tr = table.getElementsByTagName("tr");
 
+            for (i = 1; i < tr.length; i++) {  // Skip the header row
+                td = tr[i].getElementsByTagName("td");
+                let found = false;
+
+                for (let j = 0; j < td.length; j++) {
+                    if (td[j]) {
+                        txtValue = td[j].textContent || td[j].innerText;
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (found) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    </script>
     <script src="../static/script.js"></script>
 </body>
 </html>

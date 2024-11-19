@@ -801,7 +801,7 @@ def admin_forward():
 
         if not document:
             flash(f'Document with tracking number {tracking_number} does not exist.', 'error')
-            return redirect(url_for('encoded_documents'))
+            return redirect(url_for('admin_encoded'))
 
         # Retrieve the document number (DocNo)
         doc_no = document[0]
@@ -1025,7 +1025,7 @@ def encoded_documents():
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # Fetch paginated documents for the user, excluding those marked as 'Complete'
+        # Fetch paginated documents for the user, excluding those marked as 'Complete' or 'Forwarded'
         cursor.execute("""        
             SELECT d.TrackingNumber, 
                    u.Firstname, 
@@ -1035,14 +1035,17 @@ def encoded_documents():
                    d.DocPurpose, 
                    COALESCE(s.SchoolName, o.OfficeName, 'N/A') AS SchoolOrOffice, 
                    d.DateEncoded, 
-                   d.DateReceived, 
-                   d.Status
+                   d.Status,
+                   t.ReceivedDate,  -- Fetch ReceivedDate from TRANSACTIONS table
+                   t.Comments  -- Fetch Comments from TRANSACTIONS table
             FROM DOCUMENTS d
             JOIN USERS u ON d.UserID = u.UserID
             JOIN DOCUMENT_TYPE dt ON d.DocTypeID = dt.DocTypeID
             LEFT JOIN SCHOOLS s ON d.SchoolID = s.SchoolID
             LEFT JOIN OFFICES o ON d.OfficeIDToSend = o.OfficeID
-            WHERE (d.UserID = %s OR d.Status = 'Received') AND d.Status != 'Complete'
+            LEFT JOIN TRANSACTIONS t ON d.DocNo = t.DocNo  -- Join with TRANSACTIONS for ReceivedDate and Comments
+            WHERE (d.UserID = %s OR d.Status = 'Received') 
+              AND d.Status NOT IN ('Complete', 'Forwarded')
             ORDER BY d.DateEncoded DESC
             LIMIT %s OFFSET %s
         """, (user_id, per_page, offset))
@@ -1053,11 +1056,11 @@ def encoded_documents():
         cursor.execute("SELECT OfficeID, OfficeName FROM OFFICES")
         offices = cursor.fetchall()
 
-        # Count total documents for the user, excluding completed documents
+        # Count total documents for the user, excluding completed or forwarded documents
         cursor.execute("""
             SELECT COUNT(*) AS total_documents
             FROM DOCUMENTS 
-            WHERE (UserID = %s OR Status = 'Received') AND Status != 'Complete'
+            WHERE (UserID = %s OR Status = 'Received') AND Status NOT IN ('Complete', 'Forward')
         """, (user_id,))
         total_documents = cursor.fetchone()['total_documents']
         total_pages = (total_documents + per_page - 1) // per_page
@@ -1074,7 +1077,7 @@ def encoded_documents():
     finally:
         cursor.close()
         conn.close()
-   
+
 # "DOCUMENTS FOR RECEIVE" FOR RECORDS OFFICE / receive_documents.html
 @app.route('/receive_documents')
 @login_required
@@ -1087,7 +1090,7 @@ def receive_documents():
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # Fetch paginated documents created by USERS and forwarded to the Records Office
+        # Fetch paginated documents created by USERS or forwarded to the Records Office
         cursor.execute(""" 
             SELECT d.DocNo,  -- Include the DocNo here
                    d.TrackingNumber, 
@@ -1100,31 +1103,59 @@ def receive_documents():
                    o.OfficeName,  -- Fetch the Office Name
                    d.DateEncoded, 
                    d.DateReceived, 
-                   d.Status
+                   d.Status,
+                   d.OfficeIDToSend,  -- Include OfficeIDToSend for filtering
+                   t.ForwardDate,  -- Fetch ForwardDate from TRANSACTIONS table
+                   t.Comments  -- Fetch Comments from TRANSACTIONS table
             FROM DOCUMENTS d
             JOIN USERS u ON d.UserID = u.UserID
             JOIN DOCUMENT_TYPE dt ON d.DocTypeID = dt.DocTypeID
             LEFT JOIN SCHOOLS s ON d.SchoolID = s.SchoolID
             LEFT JOIN OFFICES o ON d.OfficeID = o.OfficeID  -- Join with Offices
-            WHERE d.OfficeIDToSend = %s  -- Filter by the OfficeID for Records Office
+            LEFT JOIN TRANSACTIONS t ON d.DocNo = t.DocNo  -- Join with TRANSACTIONS for ForwardDate and Comments
+            WHERE (d.OfficeIDToSend = %s  -- Include documents forwarded to the current office
+                   OR t.ForwardedToOfficeID = %s  -- Include forwarded documents
+                   OR (d.UserID = u.UserID AND d.Status != 'Complete'))  -- Include documents created by the user
               AND d.Status != 'Complete'  -- Exclude completed documents
-              AND d.Status != 'received'   -- Exclude received documents
-            ORDER BY d.DateEncoded DESC
+              AND d.Status != 'Received'  -- Exclude received documents
+              AND (t.Status = 'Forwarded'  -- Include forwarded documents
+                   OR t.Status IS NULL)  -- Include documents not yet forwarded
+              AND (t.ForwardDate IS NULL 
+                   OR t.ForwardDate = (  -- Ensure selecting only the latest forward transaction
+                      SELECT MAX(t2.ForwardDate)
+                      FROM TRANSACTIONS t2
+                      WHERE t2.DocNo = t.DocNo
+                        AND t2.Status = 'Forwarded'
+                   ))
+            ORDER BY t.ForwardDate DESC, d.DateEncoded DESC  -- Order by forward date and encoding date
             LIMIT %s OFFSET %s
-        """, (session.get('office_id'), per_page, offset))  # Assuming office_id is stored in session
+        """, (session.get('office_id'), session.get('office_id'), per_page, offset))
 
         documents = cursor.fetchall()
 
-        # Count total documents forwarded to the Records Office created by USERS and STAFF
+        # Count total documents created by USERS or forwarded to the Records Office
         cursor.execute(""" 
-            SELECT COUNT(*) FROM DOCUMENTS d 
-            JOIN USERS u ON d.UserID = u.UserID 
-            WHERE d.OfficeIDToSend = %s 
-              AND d.Status != 'Complete'  -- Count only non-completed documents
-              AND d.Status != 'received'  -- Exclude received documents
-        """, (session.get('office_id'),))
-        
-        total_documents = cursor.fetchone()['COUNT(*)']
+            SELECT COUNT(DISTINCT d.DocNo) AS total_documents
+            FROM DOCUMENTS d
+            JOIN USERS u ON d.UserID = u.UserID
+            LEFT JOIN TRANSACTIONS t ON d.DocNo = t.DocNo
+            WHERE (d.OfficeIDToSend = %s
+                   OR t.ForwardedToOfficeID = %s
+                   OR (d.UserID = u.UserID AND d.Status != 'Complete'))  -- Include documents created by the user
+              AND d.Status != 'Complete'  -- Exclude completed documents
+              AND d.Status != 'Received'  -- Exclude received documents
+              AND (t.Status = 'Forwarded'
+                   OR t.Status IS NULL)  -- Include documents not yet forwarded
+              AND (t.ForwardDate IS NULL 
+                   OR t.ForwardDate = (  -- Ensure counting only the latest forward transaction
+                      SELECT MAX(t2.ForwardDate)
+                      FROM TRANSACTIONS t2
+                      WHERE t2.DocNo = t.DocNo
+                        AND t2.Status = 'Forwarded'
+                   ))
+        """, (session.get('office_id'), session.get('office_id')))
+
+        total_documents = cursor.fetchone()['total_documents']
         total_pages = (total_documents + per_page - 1) // per_page
 
         return render_template(
@@ -1138,6 +1169,7 @@ def receive_documents():
     finally:
         cursor.close()
         conn.close()
+
 
 @app.route('/success')
 def success_page():
@@ -1195,63 +1227,63 @@ def handle_receive_document(doc_no):
 
 
 # "FORWARD" ACTION BUTTON FOR RECORDS OFFICE
-@app.route('/forward_document', methods=['POST'])
-def forward_document():
-    tracking_number = request.form.get('tracking_number')
-    comments = request.form.get('comments')
-    forwarded_to_office_id = request.form.get('forwarded_to_office_id')  # Capture selected office ID
+    @app.route('/forward_document', methods=['POST'])
+    def forward_document():
+        tracking_number = request.form.get('tracking_number')
+        comments = request.form.get('comments')
+        forwarded_to_office_id = request.form.get('forwarded_to_office_id')  # Capture selected office ID
 
-    try:
-        # Connect to the database
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor()
+        try:
+            # Connect to the database
+            conn = mysql.connector.connect(**db_config)
+            cursor = conn.cursor()
 
-        # Verify that the document exists
-        cursor.execute("SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s", (tracking_number,))
-        document = cursor.fetchone()
+            # Verify that the document exists
+            cursor.execute("SELECT DocNo FROM DOCUMENTS WHERE TrackingNumber = %s", (tracking_number,))
+            document = cursor.fetchone()
 
-        if not document:
-            flash(f'Document with tracking number {tracking_number} does not exist.', 'error')
-            return redirect(url_for('encoded_documents'))
+            if not document:
+                flash(f'Document with tracking number {tracking_number} does not exist.', 'error')
+                return redirect(url_for('encoded_documents'))
 
-        # Retrieve the document number (DocNo)
-        doc_no = document[0]
+            # Retrieve the document number (DocNo)
+            doc_no = document[0]
 
-        # Update document status to 'Forwarded'
-        cursor.execute("""
-            UPDATE DOCUMENTS
-            SET Status = 'Forwarded'
-            WHERE TrackingNumber = %s
-        """, (tracking_number,))
+            # Update document status to 'Forwarded'
+            cursor.execute("""
+                UPDATE DOCUMENTS
+                SET Status = 'Forwarded'
+                WHERE TrackingNumber = %s
+            """, (tracking_number,))
 
-        # Insert a new transaction record with dynamic ForwardedToOfficeID
-        cursor.execute("""
-            INSERT INTO TRANSACTIONS (
-                OfficeID, DocNo, UserID, ForwardDate, Status, TransactionType, Comments, ForwardedToOfficeID, TrackingNumber
-            ) VALUES (%s, %s, %s, NOW(), 'Forwarded', 'Forward', %s, %s, %s)
-        """, (
-            session.get('office_id'),   # Office initiating the forward
-            doc_no,                     # Document number
-            session.get('user_id'),     # User performing the action
-            comments,                   # Comments from the form
-            forwarded_to_office_id,     # Selected office from dropdown
-            tracking_number             # Tracking number
-        ))
+            # Insert a new transaction record with dynamic ForwardedToOfficeID
+            cursor.execute("""
+                INSERT INTO TRANSACTIONS (
+                    OfficeID, DocNo, UserID, ForwardDate, Status, TransactionType, Comments, ForwardedToOfficeID, TrackingNumber
+                ) VALUES (%s, %s, %s, NOW(), 'Forwarded', 'Forward', %s, %s, %s)
+            """, (
+                session.get('office_id'),   # Office initiating the forward
+                doc_no,                     # Document number
+                session.get('user_id'),     # User performing the action
+                comments,                   # Comments from the form
+                forwarded_to_office_id,     # Selected office from dropdown
+                tracking_number             # Tracking number
+            ))
 
-        conn.commit()
-        flash(f'Document {tracking_number} forwarded successfully!', 'success')
+            conn.commit()
+            flash(f'Document {tracking_number} forwarded successfully!', 'success')
 
-    except mysql.connector.Error as err:
-        conn.rollback()
-        print(f"Database error: {err}")
-        flash(f'Error forwarding document: {err}', 'error')
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+        except mysql.connector.Error as err:
+            conn.rollback()
+            print(f"Database error: {err}")
+            flash(f'Error forwarding document: {err}', 'error')
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
-    return redirect(url_for('encoded_documents'))
+        return redirect(url_for('encoded_documents'))
 
 # "COMPLETE" ACTION BUTTON FOR RECORDS OFFICE
 @app.route('/complete_document', methods=['POST'])
@@ -1436,8 +1468,8 @@ def budget_encoded():
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # Fetch paginated documents for the user, excluding completed documents
-        cursor.execute("""
+        # Fetch paginated documents for the user, excluding those marked as 'Complete'
+        cursor.execute("""        
             SELECT d.TrackingNumber, 
                    u.Firstname, 
                    u.Lastname, 
@@ -1447,36 +1479,45 @@ def budget_encoded():
                    COALESCE(s.SchoolName, o.OfficeName, 'N/A') AS SchoolOrOffice, 
                    d.DateEncoded, 
                    d.DateReceived, 
-                   d.Status,
-                   d.OfficeIDToSend
+                   d.Status
             FROM DOCUMENTS d
             JOIN USERS u ON d.UserID = u.UserID
             JOIN DOCUMENT_TYPE dt ON d.DocTypeID = dt.DocTypeID
             LEFT JOIN SCHOOLS s ON d.SchoolID = s.SchoolID
             LEFT JOIN OFFICES o ON d.OfficeIDToSend = o.OfficeID
-            WHERE d.UserID = %s AND d.Status != 'Completed'
+            WHERE (d.UserID = %s OR d.Status = 'Received') AND d.Status != 'Complete'
             ORDER BY d.DateEncoded DESC
             LIMIT %s OFFSET %s
         """, (user_id, per_page, offset))
 
         documents = cursor.fetchall()
 
+        # Fetch offices to populate the dropdown
+        cursor.execute("SELECT OfficeID, OfficeName FROM OFFICES")
+        offices = cursor.fetchall()
+
         # Count total documents for the user, excluding completed documents
-        cursor.execute("SELECT COUNT(*) FROM DOCUMENTS WHERE UserID = %s AND Status != 'Completed'", (user_id,))
-        total_documents = cursor.fetchone()['COUNT(*)']
+        cursor.execute("""
+            SELECT COUNT(*) AS total_documents
+            FROM DOCUMENTS 
+            WHERE (UserID = %s OR Status = 'Received') AND Status NOT IN ('Complete', 'Forward')
+        """, (user_id,))
+        total_documents = cursor.fetchone()['total_documents']
         total_pages = (total_documents + per_page - 1) // per_page
 
         return render_template(
             'budget_office/budget_encoded.html',
             documents=documents,
+            offices=offices,  # Pass the office data to the template
             current_page=page,
-            total_pages=total_pages  # Ensure total_pages is defined here
+            total_pages=total_pages
         )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
         conn.close()
+
 
 # "DOCUMENT FOR RECEIVE" FOR BUDGET / budget_documents.html
 @app.route('/budget_documents')
@@ -1502,8 +1543,8 @@ def budget_documents():
                    s.SchoolName, 
                    o.OfficeName, 
                    d.DateEncoded, 
-                   d.DateReceived, 
                    t.Status,
+                   t.ForwardDate,  -- Fetch ForwardDate from TRANSACTIONS table
                    t.ForwardedToOfficeID,
                    t.Comments
             FROM DOCUMENTS d
@@ -1546,7 +1587,6 @@ def budget_documents():
         conn.close()
 
 
-
 # "RECEIVE" ACTION BUTTON FOR BUDGET
 @app.route('/budget_receive_document/<int:doc_no>', methods=['POST'])
 @login_required
@@ -1555,22 +1595,35 @@ def handle_budget_receive_document(doc_no):
     cursor = conn.cursor()
 
     try:
-        # 1. Update the status of the document to 'Received' and set DateReceived
+        # 1. Check if the document is forwarded to the current office and is in 'Forwarded' status
+        cursor.execute("""
+            SELECT t.TransactionID, d.TrackingNumber 
+            FROM TRANSACTIONS t
+            JOIN DOCUMENTS d ON t.DocNo = d.DocNo
+            WHERE t.DocNo = %s AND t.ForwardedToOfficeID = %s AND t.Status = 'Forwarded'
+        """, (doc_no, session.get('office_id')))
+        
+        transaction = cursor.fetchone()
+        if not transaction:
+            return jsonify({"error": "Document not found or not forwarded to your office."}), 404
+
+        tracking_number = transaction[1]  # Get the TrackingNumber
+
+        # 2. Update the DOCUMENTS table to set status to 'Received' and record DateReceived
         cursor.execute("""
             UPDATE DOCUMENTS
             SET Status = %s, DateReceived = NOW()
-            WHERE DocNo = %s AND OfficeID = %s
-        """, ('Received', doc_no, session.get('office_id')))
-        
-        if cursor.rowcount == 0:
-            return jsonify({"error": "Document not found or already received."}), 404
+            WHERE DocNo = %s
+        """, ('Received', doc_no))
 
-        # 2. Fetch the TrackingNumber for this document
-        cursor.execute("SELECT TrackingNumber FROM DOCUMENTS WHERE DocNo = %s", (doc_no,))
-        tracking_number_result = cursor.fetchone()
-        tracking_number = tracking_number_result[0] if tracking_number_result else None
+        # 3. Update the TRANSACTIONS table to mark this transaction as 'Received'
+        cursor.execute("""
+            UPDATE TRANSACTIONS
+            SET Status = %s, ReceivedDate = NOW()
+            WHERE TransactionID = %s
+        """, ('Received', transaction[0]))
 
-        # 3. Insert the transaction into the TRANSACTIONS table
+        # 4. Insert a new record in the TRANSACTIONS table for the 'Receive' action
         cursor.execute("""
             INSERT INTO TRANSACTIONS (
                 OfficeID, DocNo, UserID, 
@@ -1586,16 +1639,22 @@ def handle_budget_receive_document(doc_no):
             tracking_number            # TrackingNumber associated with this document
         ))
 
+        # Commit the transaction to save changes
         conn.commit()
+
+        # Redirect to the budget_documents page
         return redirect(url_for('budget_documents'))
 
     except Exception as e:
+        # Rollback the transaction in case of error
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
     finally:
+        # Always close the database connection
         cursor.close()
         conn.close()
+
 
 # "FORWARD" ACTION BUTTON FOR BUDGET OFFICE
 @app.route('/budget_forward', methods=['POST'])
@@ -1615,7 +1674,7 @@ def budget_forward():
 
         if not document:
             flash(f'Document with tracking number {tracking_number} does not exist.', 'error')
-            return redirect(url_for('encoded_documents'))
+            return redirect(url_for('budget_encoded'))
 
         # Retrieve the document number (DocNo)
         doc_no = document[0]
@@ -4458,6 +4517,108 @@ def receive_document(doc_no):
 
     # This return statement is to satisfy the function requirements, though it should not be reached
     return redirect(url_for('receive_documents'))  # Ensure this is the last line
+
+@app.route('/search_documents', methods=['GET', 'POST'])
+@login_required
+def search_documents():
+    # Ensure the user is a staff member
+    if session.get('role') != 3:  # Assuming role '3' is for staff
+        return redirect(url_for('index'))  # Redirect unauthorized users
+
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('logout'))  # Handle case where user ID is not in session
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    documents = []
+    search_query = ''
+    filters = {}
+
+    # Get search parameters from the form (if POST request)
+    if request.method == 'POST':
+        search_query = request.form.get('search_query', '').strip()  # Search query from input form
+        doc_type = request.form.get('doc_type', '')  # Document type filter (if any)
+        status = request.form.get('status', '')  # Status filter (if any)
+
+        filters['search_query'] = search_query
+        filters['doc_type'] = doc_type
+        filters['status'] = status
+
+    page = request.args.get('page', 1, type=int)  # Get the page number from query params
+    per_page = 10  # Documents per page
+    offset = (page - 1) * per_page
+
+    try:
+        # Build the search query with optional filters
+        sql_query = """
+            SELECT d.DocNo, d.TrackingNumber, u.Firstname, u.Lastname, dt.DocTypeName,
+                   d.DocDetails, d.DocPurpose, s.SchoolName, o.OfficeName, 
+                   d.DateEncoded, d.DateReceived, d.Status
+            FROM DOCUMENTS d
+            JOIN USERS u ON d.UserID = u.UserID
+            JOIN DOCUMENT_TYPE dt ON d.DocTypeID = dt.DocTypeID
+            LEFT JOIN SCHOOLS s ON d.SchoolID = s.SchoolID
+            LEFT JOIN OFFICES o ON d.OfficeID = o.OfficeID
+            WHERE (d.UserID = %s OR d.Status = 'Received') 
+              AND d.Status != 'Complete'
+        """
+        
+        # Apply filters based on form input (search query, document type, status)
+        if search_query:
+            sql_query += " AND (d.TrackingNumber LIKE %s OR u.Firstname LIKE %s OR u.Lastname LIKE %s OR dt.DocTypeName LIKE %s)"
+            filters['search_query'] = f"%{search_query}%"
+
+        if doc_type:
+            sql_query += " AND d.DocTypeID = %s"
+            filters['doc_type'] = doc_type
+
+        if status:
+            sql_query += " AND d.Status = %s"
+            filters['status'] = status
+
+        # Add pagination
+        sql_query += " ORDER BY d.DateEncoded DESC LIMIT %s OFFSET %s"
+        
+        # Execute the query with the filter values
+        cursor.execute(sql_query, (
+            user_id, 
+            filters.get('search_query'), 
+            filters.get('search_query'), 
+            filters.get('search_query'),
+            filters.get('search_query'),
+            filters.get('doc_type'),
+            filters.get('status'),
+            per_page, offset
+        ))
+
+        documents = cursor.fetchall()
+
+        # Count total documents for the user (applying the same filters)
+        cursor.execute("""
+            SELECT COUNT(*) 
+            FROM DOCUMENTS d
+            WHERE (d.UserID = %s OR d.Status = 'Received') 
+              AND d.Status != 'Complete'
+        """, (user_id,))
+        
+        total_documents = cursor.fetchone()['COUNT(*)']
+        total_pages = (total_documents + per_page - 1) // per_page
+
+        return render_template(
+            'records_office/search_documents.html',
+            documents=documents,
+            current_page=page,
+            total_pages=total_pages,
+            search_query=search_query,
+            doc_type=doc_type,
+            status=status
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
 
 def get_current_user_id():
     # Logic to retrieve the current user's ID (e.g., from session)

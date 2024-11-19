@@ -13,7 +13,6 @@
     <!-- SIDEBAR -->
     <section id="sidebar">
         <a href="{{ url_for('_budget_dashboard') }}" class="brand">
-            <i class='bx bxs-smile'></i>
             <span class="text">DepEd Cebu City - Budget Office</span>
         </a>
         <ul class="side-menu top">
@@ -55,14 +54,6 @@
 
     <!-- CONTENT -->
     <section id="content">
-        <!-- NAVBAR -->
-        <nav>
-            <form action="#"></form>
-            <a href="#" class="profile">
-                <img src="img/people.png" alt="User Profile Image">
-            </a>
-        </nav>
-        <!-- NAVBAR -->
 
         <!-- MAIN -->
         <main>
@@ -85,6 +76,10 @@
                 <div class="order">
                     <div class="head">
                         <h3>Documents</h3>
+                        <!-- Search Bar -->
+                        <div class="search-container">
+                            <input type="text" id="searchBar" placeholder="Search..." onkeyup="searchDocuments()">
+                        </div>
                     </div>
                     <table>
                         <thead>
@@ -106,7 +101,7 @@
                                 {% for document in documents %}
                                 <tr>
                                     <td>{{ document.TrackingNumber }}</td>
-                                    <td>{{ document.Firstname }} {{ document.Lastname }}</td>
+                                    <td>{{ document.Lastname }}</td>
                                     <td>{{ document.DocTypeName }}</td>
                                     <td>{{ document.DocDetails }}</td>
                                     <td>{{ document.DocPurpose }}</td>
@@ -168,7 +163,7 @@
         <div class="modal-content">
             <span class="close" onclick="closeForwardModal('{{ document.TrackingNumber }}')">&times;</span>
             <h2>Forward Document</h2>
-            <form id="forwardForm-{{ document.TrackingNumber }}" method="POST" action="/forward_document" onsubmit="return validateForwardForm('{{ document.TrackingNumber }}')">
+            <form id="forwardForm-{{ document.TrackingNumber }}" method="POST" action="/budget_forward" onsubmit="return validateForwardForm('{{ document.TrackingNumber }}')">
                 <input type="hidden" name="tracking_number" value="{{ document.TrackingNumber }}" required>
 
                 <div class="form-group">
@@ -246,6 +241,34 @@
                 return false; // Prevent form submission
             }
             return true; // Allow form submission
+        }
+        function searchDocuments() {
+            var input, filter, table, tr, td, i, txtValue;
+            input = document.getElementById('searchBar');
+            filter = input.value.toUpperCase();
+            table = document.querySelector("table");
+            tr = table.getElementsByTagName("tr");
+
+            for (i = 1; i < tr.length; i++) {  // Skip the header row
+                td = tr[i].getElementsByTagName("td");
+                let found = false;
+
+                for (let j = 0; j < td.length; j++) {
+                    if (td[j]) {
+                        txtValue = td[j].textContent || td[j].innerText;
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (found) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
         }
     </script>
 

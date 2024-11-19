@@ -13,7 +13,6 @@
     <!-- SIDEBAR -->
     <section id="sidebar">
         <a href="{{ url_for('_admin_dashboard') }}" class="brand">
-            <i class='bx bxs-smile'></i>
             <span class="text">DepEd Cebu City - Admin Office</span>
         </a>
         <ul class="side-menu top">
@@ -55,15 +54,6 @@
 
     <!-- CONTENT -->
     <section id="content">
-        <!-- NAVBAR -->
-        <nav>
-            <form action="#"></form>
-            <a href="#" class="profile">
-                <img src="img/people.png" alt="User Profile Image">
-            </a>
-        </nav>
-        <!-- NAVBAR -->
-
         <!-- MAIN -->
         <main>
             <div class="head-title">
@@ -71,11 +61,11 @@
                     <h1>All Documents</h1>
                     <ul class="breadcrumb">
                         <li>
-                            <a class="active" href="{{ url_for('_admin_dashboard') }}">Dashboard</a>
+                            <a class="active" href="{{ url_for('_records_dashboard') }}">Dashboard</a>
                         </li>
                         <li><i class='bx bx-chevron-right'></i></li>
                         <li>
-                            <a class="active" href="{{ url_for('admin_encoded') }}">Encoded Documents</a>
+                            <a class="active" href="{{ url_for('cashier_encoded') }}">Encoded Documents</a>
                         </li>
                     </ul>
                 </div>
@@ -85,6 +75,10 @@
                 <div class="order">
                     <div class="head">
                         <h3>Documents</h3>
+                        <!-- Search Bar -->
+                        <div class="search-container">
+                            <input type="text" id="searchBar" placeholder="Search..." onkeyup="searchDocuments()">
+                        </div>
                     </div>
                     <table>
                         <thead>
@@ -97,7 +91,7 @@
                                 <th>Forward To</th>
                                 <th>Date Encoded</th>
                                 <th>Date Received</th>
-                                <th>Status</th>
+                                <th>Remarks</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -106,7 +100,7 @@
                                 {% for document in documents %}
                                 <tr>
                                     <td>{{ document.TrackingNumber }}</td>
-                                    <td>{{ document.Firstname }} {{ document.Lastname }}</td>
+                                    <td>{{ document.Lastname }}</td>
                                     <td>{{ document.DocTypeName }}</td>
                                     <td>{{ document.DocDetails }}</td>
                                     <td>{{ document.DocPurpose }}</td>
@@ -116,7 +110,7 @@
                                     <td><span class="status {{ document.Status|lower }}">{{ document.Status }}</span></td>
                                     <td>
                                         <div class="action-buttons">
-                                            <a href="#" class="forward" onclick="openForwardModal('{{ document.TrackingNumber }}')">Forward</a>
+                                            <a href="#" class="forward" onclick="openForwardModal('{{ document.DocNo }}')">Forward</a>
                                             <a href="#" class="complete" onclick="openCompleteModal('{{ document.TrackingNumber }}')">Complete</a>
                                         </div>
                                     </td>
@@ -161,37 +155,30 @@
         <!-- MAIN -->
     </section>
     <!-- CONTENT -->
-
-    <!-- Forward Document Modal -->
-    {% for document in documents %}
-    <div id="forwardModal-{{ document.TrackingNumber }}" class="modal">
+     <!-- Forward Document Modal -->
+     <div id="forwardModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeForwardModal('{{ document.TrackingNumber }}')">&times;</span>
+            <span class="close" onclick="closeForwardModal()">&times;</span>
             <h2>Forward Document</h2>
-            <form id="forwardForm-{{ document.TrackingNumber }}" method="POST" action="/forward_document" onsubmit="return validateForwardForm('{{ document.TrackingNumber }}')">
-                <input type="hidden" name="tracking_number" value="{{ document.TrackingNumber }}" required>
 
+            <form id="forwardForm" method="POST" action="/forward_document/" + document.getElementById('forwardDocNo').value>
+                <input type="hidden" id="forwardDocNo" name="doc_no" required>
                 <div class="form-group">
-                    <label for="office-{{ document.TrackingNumber }}">Send To Office:</label>
-                    <select name="forwarded_to_office_id" id="office-{{ document.TrackingNumber }}" required>
+                    <label for="office">Send To Office:</label>
+                    <select name="office" id="office" required aria-label="Office">
                         <option value="">Select Office</option>
                         {% for office in offices %}
                             <option value="{{ office.OfficeID }}">{{ office.OfficeName }}</option>
                         {% endfor %}
                     </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="comments-{{ document.TrackingNumber }}">Comments:</label>
-                    <input type="text" name="comments" id="comments-{{ document.TrackingNumber }}" required>
-                </div>
-
-                <button type="submit">Forward</button>
+                </div>         
+                <textarea id="forwardComments" name="comments" placeholder="Add comments..."></textarea>
+                <button type="submit" class="submit-btn">Submit</button>
+                <button type="button" class="cancel-btn" onclick="closeForwardModal()">Cancel</button>
             </form>
+            
         </div>
     </div>
-    {% endfor %}
-
 
     <!-- Complete Document Modal -->
     <div id="completeModal" class="modal">
@@ -209,16 +196,15 @@
 
     <script>
         // Modal functionality
-        function openForwardModal(trackingNumber) {
-            document.getElementById(`forwardModal-${trackingNumber}`).style.display = "block";
+        function openForwardModal(docNo) {
+            document.getElementById('forwardDocNo').value = docNo;  // Set the document number
+            document.getElementById('forwardForm').action = '/forward_document/' + docNo;  // Set the form action
+            document.getElementById('forwardModal').style.display = 'block';  // Show the modal
         }
 
-            console.log('Tracking Number: ', document.getElementById('forwardTrackingNumber').value);
-            console.log('Forward to Office ID: ', document.getElementById('forwarded_to_office_id').value);
-            console.log('Comments: ', document.getElementById('comments').value);
 
-        function closeForwardModal(trackingNumber) {
-            document.getElementById(`forwardModal-${trackingNumber}`).style.display = "none";
+        function closeForwardModal() {
+            document.getElementById('forwardModal').style.display = 'none';  // Hide the modal
         }
 
 
@@ -239,13 +225,33 @@
             }
         }
 
-        function validateForwardForm() {
-            const comments = document.getElementById('forwardComments').value;
-            if (!comments.trim()) {
-                alert("Please add comments before submitting.");
-                return false; // Prevent form submission
+        function searchDocuments() {
+            var input, filter, table, tr, td, i, txtValue;
+            input = document.getElementById('searchBar');
+            filter = input.value.toUpperCase();
+            table = document.querySelector("table");
+            tr = table.getElementsByTagName("tr");
+
+            for (i = 1; i < tr.length; i++) {  // Skip the header row
+                td = tr[i].getElementsByTagName("td");
+                let found = false;
+
+                for (let j = 0; j < td.length; j++) {
+                    if (td[j]) {
+                        txtValue = td[j].textContent || td[j].innerText;
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (found) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
             }
-            return true; // Allow form submission
         }
     </script>
 

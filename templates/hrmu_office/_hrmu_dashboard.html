@@ -10,7 +10,6 @@
 <body>
     <section id="sidebar">
         <a href="{{ url_for('_hrmu_dashboard') }}" class="brand">
-            <i class='bx bxs-smile'></i>
             <span class="text">DepEd Cebu City - HRMU Office</span>
         </a>
         <ul class="side-menu top">
@@ -50,22 +49,14 @@
     </section>
 
     <section id="content">
-        <nav>
-            <form action="#"></form>
-            <a href="#" class="profile">
-                <img src="img/people.png" alt="User Profile">
-            </a>
-        </nav>
-
         <main>
             <div class="head-title">
                 <div class="left">
                     <h1>Welcome to {{ user.Firstname|upper }} Office!</h1>
                     <ul class="breadcrumb">
                         <li>
-                            <a href="{{ url_for('_cashier_dashboard') }}">Dashboard</a>
+                            <a href="{{ url_for('_hrmu_dashboard') }}">Dashboard</a>
                         </li>
-                        <li><i class='bx bx-chevron-right'></i></li>
                     </ul>
                 </div>
             </div>

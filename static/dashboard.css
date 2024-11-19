@@ -72,19 +72,19 @@ body {
 	width: 60px;
 }
 #sidebar .brand {
-	font-size: 24px;
-	font-weight: 700;
-	height: 56px;
-	display: flex;
-	align-items: center;
-	color: var(--blue);
-	position: sticky;
-	top: 0;
-	left: 0;
-	background: var(--light);
-	z-index: 500;
-	padding-bottom: 20px;
-	box-sizing: content-box;
+	font-size: 20px; /* Adjust font size for better readability */
+    font-weight: 600; /* Less bold for a more professional appearance */
+    height: 70px; /* Adjust height for a balanced look */
+    display: flex;
+    align-items: center;
+    color: var(--blue);
+    position: sticky;
+    top: 0; /* Fixed position to stay at the top */
+    left: 0;
+    background: var(--light);
+    z-index: 500;
+    padding: 16px 24px; /* Adjusted padding for better space distribution */
+    box-sizing: border-box; /* Ensure padding does not affect layout */
 }
 #sidebar .brand .bx {
 	min-width: 60px;
@@ -480,6 +480,28 @@ body {
 }
 
 #content main .table-data .order table tr td .status.complete {
+	background: var(--blue);
+	margin-left: -1px; /* Adjust left position slightly */
+	padding: 6px 13px;
+    border-radius: 30px;
+	text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    margin-right: 5px; /* Space between buttons */
+}
+
+#content main .table-data .order table tr td .status.forwarded {
+	background: var(--blue);
+	margin-left: -1px; /* Adjust left position slightly */
+	padding: 6px 13px;
+    border-radius: 30px;
+	text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    margin-right: 5px; /* Space between buttons */
+}
+
+#content main .table-data .order table tr td .status.forward {
 	background: var(--blue);
 	margin-left: -1px; /* Adjust left position slightly */
 	padding: 6px 13px;

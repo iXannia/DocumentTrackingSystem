@@ -14,7 +14,6 @@
     <!-- SIDEBAR -->
     <section id="sidebar">
         <a href="_records_dashboard" class="brand" aria-label="Home">
-            <i class='bx bxs-smile'></i>
             <span class="text">DepEd Cebu City - Records Office</span>
         </a>
         <ul class="side-menu top">
@@ -68,15 +67,6 @@
 
     <!-- CONTENT -->
     <section id="content">
-        <!-- NAVBAR -->
-        <nav>
-            <form action="#"></form>
-            <a href="#" class="profile">
-                <img src="img/people.png" alt="User Profile">
-            </a>
-        </nav>
-        <!-- NAVBAR -->
-
         <!-- MAIN -->
         <main>
             <div class="head-title">
@@ -98,6 +88,10 @@
                 <div class="order">
                     <div class="head">
                         <h3>Documents</h3>
+                        <!-- Search Bar -->
+                        <div class="search-container">
+                            <input type="text" id="searchBar" placeholder="Search..." onkeyup="searchDocuments()">
+                        </div>
                     </div>
                     <table>
                         <thead>
@@ -109,7 +103,8 @@
                                 <th>Purpose</th>
                                 <th>School/Office</th>
                                 <th>Date Encoded</th>
-                                <th>Date Received</th>
+                                <th>Date Received</th> <!-- Added column for Forwarded Date -->
+                                <th>Comments</th> <!-- Added column for Comments -->
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
@@ -123,9 +118,18 @@
                                     <td>{{ document.DocTypeName }}</td>
                                     <td>{{ document.DocDetails }}</td>
                                     <td>{{ document.DocPurpose }}</td>
-                                    <td>{{ document.SchoolOrOffice }}</td> <!-- Display School or Office -->
+                                    <td>
+                                        {% if document.SchoolName %}
+                                            {{ document.SchoolName }}
+                                        {% elif document.OfficeName %}
+                                            {{ document.OfficeName }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
                                     <td>{{ document.DateEncoded }}</td>
-                                    <td>{{ document.DateReceived }}</td>
+                                    <td>{{ document.ReceivedDate if document.ReceivedDate else 'N/A' }}</td> <!-- Display ForwardDate -->
+                                    <td>{{ document.Comments if document.Comments else 'N/A' }}</td> <!-- Display Comments -->
                                     <td><span class="status {{ document.Status|lower }}">{{ document.Status }}</span></td>
                                     <td>
                                         <div class="action-buttons">
@@ -259,6 +263,34 @@
                 return false; // Prevent form submission
             }
             return true; // Allow form submission
+        }
+        function searchDocuments() {
+            var input, filter, table, tr, td, i, txtValue;
+            input = document.getElementById('searchBar');
+            filter = input.value.toUpperCase();
+            table = document.querySelector("table");
+            tr = table.getElementsByTagName("tr");
+
+            for (i = 1; i < tr.length; i++) {  // Skip the header row
+                td = tr[i].getElementsByTagName("td");
+                let found = false;
+
+                for (let j = 0; j < td.length; j++) {
+                    if (td[j]) {
+                        txtValue = td[j].textContent || td[j].innerText;
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (found) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
         }
     </script>
 
